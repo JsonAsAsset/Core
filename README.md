@@ -1,5 +1,5 @@
 <div align="center">
-   <a href="https://github.com/Tectors/Core">
+   <a href="https://github.com/JsonAsAsset/Core">
       <img src="https://github.com/user-attachments/assets/7b63e502-3d05-4e44-b812-dcce708d6d04" width="824.652778" height="496.527778"/>
    </a>
 </div>
@@ -8,8 +8,8 @@
    <div align="center">
       
    [![Discord](https://img.shields.io/badge/Join%20Discord-Collector?color=black&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/eV9DF6sBsz)
-   [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Ko--fi?color=black&logo=ko-fi&logoColor=white&style=for-the-badge)](https://ko-fi.com/t4ctor)
-   [![Releases](https://img.shields.io/github/downloads/Tectors/Core/total?style=for-the-badge&color=black&label=Downloads)](https://github.com/Tectors/Core/releases)
+   [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Ko--fi?color=black&logo=ko-fi&logoColor=white&style=for-the-badge)](https://ko-fi.com/tectory)
+   [![Releases](https://img.shields.io/github/downloads/JsonAsAsset/Core/total?style=for-the-badge&color=black&label=Downloads)](https://github.com/JsonAsAsset/Core/releases)
 </div>
 
 ### Description
@@ -49,7 +49,7 @@ To simplify distribution, all license texts have been consolidated into a single
 ## Git Commands
 #### Clone
 ```
-git clone https://github.com/Tectors/Core --recursive
+git clone https://github.com/JsonAsAsset/Core --recursive
 ```
 #### Build
 ```
