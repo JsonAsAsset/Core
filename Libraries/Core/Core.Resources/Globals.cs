@@ -8,7 +8,7 @@ namespace Core.Resources;
 public static class Globals
 {
     /* Format: 0.0.0.0 */
-    public const string VERSION = "0.0.5.0";
+    public const string VERSION = "0.0.5.1";
     public const string COMMIT = "";
     
     public static bool IS_COMMIT_AVAILABLE => !string.IsNullOrEmpty(COMMIT);
@@ -21,7 +21,7 @@ public static class Globals
     public const string INSTANCE_NAME = $"{APP_NAME}.SingleInstance";
 
     /* GitHub Metadata */
-    private const string AUTHOR_NAME = "Tectors";
+    private const string AUTHOR_NAME = "JsonAsAsset";
     public const string GITHUB_REPO_NAME = APP_NAME;
     private const string AUTHOR_AND_GITHUB = $"{AUTHOR_NAME}/{GITHUB_REPO_NAME}";
     
