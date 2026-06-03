@@ -7,7 +7,7 @@
 </br>
    <div align="center">
       
-   [![Discord](https://img.shields.io/badge/Join%20Discord-Collector?color=black&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/eV9DF6sBsz)
+   [![Discord](https://img.shields.io/badge/Join%20Discord-Collector?color=black&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/xXEw4jc2UT)
    [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Ko--fi?color=black&logo=ko-fi&logoColor=white&style=for-the-badge)](https://ko-fi.com/tectory)
    [![Releases](https://img.shields.io/github/downloads/JsonAsAsset/Core/total?style=for-the-badge&color=black&label=Downloads)](https://github.com/JsonAsAsset/Core/releases)
 </div>
