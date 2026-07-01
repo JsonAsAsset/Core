@@ -68,7 +68,6 @@ public class BaseOnDemandProvider : BaseProvider
                 case "uondemandtoc":
                 {
                     var toc = new IoChunkToc(file.FullName, Versions);
-                    RegisterVfs(toc, OnDemandOptions);
                     break;
                 }
             }
@@ -126,7 +125,6 @@ public class BaseOnDemandProvider : BaseProvider
                     }
 
                     var toc = new IoChunkToc(targetPath, Versions);
-                    RegisterVfs(toc, OnDemandOptions);
                     break;
                 }
             }

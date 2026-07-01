@@ -77,11 +77,6 @@ public partial class HomeView : ViewBase<HomeViewModel>
         Navigation.App.Open(typeof(ProfileSelectionView));
     }
 
-    private void ExploreFiles(object? sender, RoutedEventArgs e)
-    {
-        MainWM.NavigateToExplorer();
-    }
-
     static bool IsHeartAnimationPlaying;
     
     private async void Donate_OnPointerPressed(object? sender)

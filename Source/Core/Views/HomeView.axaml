@@ -99,21 +99,6 @@
                                 <TextBlock FontWeight="Bold" FontSize="19">Start a Profile</TextBlock>
                             </StackPanel>
                         </Button>
-                        
-                        <Grid IsVisible="{x:Static Core:Globals.IsReadyToExplore}">
-                            <!-- Explore Files button -->
-                            <Button Click="ExploreFiles" CornerRadius="25"
-                                    Classes="White PressScale"
-                                    Cursor="Hand" HorizontalAlignment="Stretch" Padding="25 0" Height="40"
-                                    IsVisible="{Binding Source={x:Static framework:AppServices.MainWM}, Path=IsProfileInitialized}"
-                                    HorizontalContentAlignment="Center"
-                                    VerticalContentAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="14">
-                                    <avalonia:MaterialIcon Width="19" Kind="Folder" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock FontWeight="Bold" FontSize="19">Explore Files</TextBlock>
-                                </StackPanel>
-                            </Button>
-                        </Grid>
                     </StackPanel>
                     
                     <!-- Social buttons -->

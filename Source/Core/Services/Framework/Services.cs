@@ -34,8 +34,6 @@ public static class AppServices
     /* Models ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
     public static MainWindowModel MainWM => Services.GetRequiredService<MainWindowModel>();
     
-    public static ExplorerViewModel ExplorerVM => Services.GetRequiredService<ExplorerViewModel>();
     public static ProfileSelectionViewModel ProfileSelectionVM => Services.GetRequiredService<ProfileSelectionViewModel>();
-    public static ScopeViewModel ScopeVM => Services.GetRequiredService<ScopeViewModel>();
     public static SettingsViewModel SettingsVM => Services.GetRequiredService<SettingsViewModel>();
 }

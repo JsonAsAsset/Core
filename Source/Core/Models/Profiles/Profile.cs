@@ -38,6 +38,7 @@ using Core.Resources.Framework.CUEParse;
 using Core.Plugins.OnDemand;
 using Core.Resources.Migration;
 using Core.Windows;
+using CUE4Parse.MappingsProvider.Usmap;
 
 namespace Core.Models.Profiles;
 
@@ -118,9 +119,6 @@ public class Profile : BaseProfileDisplay
             
             return;
         }
-        
-        ExplorerVM.Reset();
-        ScopeVM.Reset();
         
         CheckStatusNotifies();
         
@@ -271,33 +269,6 @@ public class Profile : BaseProfileDisplay
         }
 
         if (!Encryption.IsValid) Encryption.MainKey = EMPTY_CHAR;
-        
-        Provider.VfsMounted += (sender, _) =>
-        {
-            if (!Globals.IsReadyToExplore) return;
-            MainWM.UpdateLoadedFilesDisplay();
-            
-            if (sender is not IAesVfsReader reader) return;
-            UpdateStatus($"Loading {reader.Name}");
-        };
-        Provider.VfsMounted += (sender, _) =>
-        {
-            if (sender is not IAesVfsReader reader) return;
-            if (!Globals.IsReadyToExplore) return;
-            ScopeVM.Verify(reader);
-        };
-        Provider.VfsRegistered += (sender, _) =>
-        {
-            if (sender is not IAesVfsReader reader) return;
-            if (!Globals.IsReadyToExplore) return;
-            ScopeVM.Add(reader);
-        };
-        Provider.VfsUnmounted += (sender, _) =>
-        {
-            if (sender is not IAesVfsReader reader) return;
-            if (!Globals.IsReadyToExplore) return;
-            ScopeVM.Disable(reader);
-        };
         
         Provider.ReadScriptData = Settings.Serialization.ReadBlueprintBytecode;
         Provider.ReadShaderMaps = Settings.Serialization.ReadMaterialShaderMaps;

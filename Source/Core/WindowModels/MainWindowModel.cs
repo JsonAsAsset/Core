@@ -57,7 +57,6 @@ public partial class MainWindowModel : WindowModelBase
     [NotifyPropertyChangedFor(nameof(ProfileDisplayName))]
     [NotifyPropertyChangedFor(nameof(DoesProfileExist))]
     [NotifyPropertyChangedFor(nameof(IsProfileInitialized))]
-    [NotifyPropertyChangedFor(nameof(LoadedFilesDisplay))]
     [NotifyPropertyChangedFor(nameof(Title))]
     private Profile? _currentProfile;
 
@@ -136,12 +135,8 @@ public partial class MainWindowModel : WindowModelBase
         UpdateGradientBrush();
     }
 
-    [ObservableProperty] private bool _isExplorer;
-
     public void OnNavigationItemSelected(Type pageType)
     {
-        IsExplorer = pageType == typeof(ExplorerPlaceholder);
-
         CurrentToolbarContent = pageType == typeof(ProfileSelectionView) ? new ProfileSelectionViewToolbar() : null;
     }
 
@@ -150,13 +145,6 @@ public partial class MainWindowModel : WindowModelBase
         CurrentProfile?.OpenEditor();
     }
     
-    public void NavigateToExplorer()
-    {
-        if (!ExplorerVM.Loading || !IsProfileInitialized) return;
-
-        Navigation.App.Open(typeof(ExplorerPlaceholder));
-    }
-
     /* ~~~ Status Transitions ~~~ */
     public void NavigateToStatus(AppStatus newStatus)
     {
@@ -455,34 +443,6 @@ public partial class MainWindowModel : WindowModelBase
             : $"{CurrentProfile!.Name} — Idling";
 
         Discord.UpdateDetails(details);
-    }
-    
-    public static string LoadedFilesDisplay
-    {
-        get
-        {
-            var count = ExplorerVM.AssetCount;
-            var formattedNumber = FormatNumber(count);
-            
-            return $"— {formattedNumber} assets";
-        }
-    }
-    
-    public static string LoadedFilesDisplayWithoutDash
-    {
-        get
-        {
-            var count = ExplorerVM.AssetCount;
-            var formattedNumber = FormatNumber(count);
-            
-            return $"{formattedNumber} assets";
-        }
-    }
-    
-    public void UpdateLoadedFilesDisplay()
-    {
-        OnPropertyChanged(nameof(LoadedFilesDisplay));
-        OnPropertyChanged(nameof(LoadedFilesDisplayWithoutDash));
     }
     
     private static string FormatNumber(long number)

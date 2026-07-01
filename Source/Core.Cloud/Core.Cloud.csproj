@@ -5,7 +5,7 @@
         <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
         <RuntimeIdentifier>win-x64</RuntimeIdentifier>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <TargetFramework>net8.0-windows</TargetFramework>
+        <TargetFramework>net10.0-windows</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <SelfContained>true</SelfContained>
         <LangVersion>preview</LangVersion>

@@ -18,7 +18,7 @@
 
       <RuntimeIdentifier>win-x64</RuntimeIdentifier>
       <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-      <TargetFramework>net8.0-windows</TargetFramework>
+      <TargetFramework>net10.0-windows</TargetFramework>
       <SelfContained>true</SelfContained>
       <OutputType>WinExe</OutputType>
       <Nullable>enable</Nullable>
@@ -94,9 +94,6 @@
     </Compile>
     <Compile Update="Views\SettingsView.cs">
       <DependentUpon>SettingsView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\ExplorerView.cs">
-      <DependentUpon>ExplorerView.axaml</DependentUpon>
     </Compile>
     <Compile Update="Views\Startup\StartupWelcomeView.cs">
       <DependentUpon>StartupWelcomeView.axaml</DependentUpon>
@@ -181,9 +178,6 @@
     </Compile>
     <Compile Update="Views\HomeView.cs">
       <DependentUpon>HomeView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\ScopeView.cs">
-      <DependentUpon>ScopeView.axaml</DependentUpon>
     </Compile>
     <Compile Update="Views\Profiles\ProfileSelectionView.cs">
       <DependentUpon>ProfileSelectionView.axaml</DependentUpon>

@@ -7,7 +7,6 @@ namespace Core;
 
 public static class Globals
 {
-    public const bool IsReadyToExplore = false;
     public const bool IsReadyToMeshExport = false;
 
     public static readonly FilePickerFileType MappingsFileType = new(".USMAP Files") { Patterns = [ "*.usmap" ] };
