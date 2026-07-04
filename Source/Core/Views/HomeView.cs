@@ -201,11 +201,11 @@ public partial class HomeView : ViewBase<HomeViewModel>
         {
             if (MainWM.CurrentProfile.IsInitialized)
             {
-                Prompt.Text = "You're all set.";
+                Prompt.Text = "you're all set!";
             }
             else
             {
-                Prompt.Text = "Just a moment…";
+                Prompt.Text = "just a moment…";
             }
         }
         else

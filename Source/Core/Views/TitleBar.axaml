@@ -65,78 +65,72 @@
                 </Button>
             </Grid>
             
-            <TextBlock IsVisible="{x:Static Core:Globals.ShowVersion}" IsHitTestVisible="False" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="30" Opacity="0.1" Text="/"/>
-            
-            <!-- Version Button -->
-            <Button IsVisible="{x:Static Core:Globals.ShowVersion}" Height="33" Classes="SoftHoverLift">
-                <Button.Flyout>
-                    <Flyout Placement="Bottom" VerticalOffset="3">
-                        <StackPanel Spacing="15" Margin="5">
-                            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0 0 8 0">
-                                <Border Width="40" Height="40" CornerRadius="10" Background="Black" BorderThickness="1" BorderBrush="#1f2023">
-                                    <Image
-                                        Source="/Assets/Icon/Scaled/App.Icon.32.png"
-                                        Width="20"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        IsHitTestVisible="False"
-                                        Margin="0 0 0 0"/>
-                                </Border>
-
-                                <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Spacing="2">
-                                    <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{x:Static Core.Resources:Globals.VERSION}"/>
-                                    <TextBlock IsVisible="{x:Static Core.Resources:Globals.IS_COMMIT_AVAILABLE}" FontSize="12" Opacity="0.5" Text="{x:Static Core.Resources:Globals.COMMIT}"/>
-                                </StackPanel>
-                            </StackPanel>
-                            
-                            <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
-                                <Button Click="CopyGitCloneCommand" Cursor="Hand" Classes="AccentHighlight HoverLift" Height="30">
-                                    <ToolTip.Tip>
-                                        <StackPanel MaxWidth="250">
-                                            <TextBlock>
-                                                Copies a one-line Git command that:
-                                            </TextBlock>
-                                            <TextBlock>
-                                                - Clones this repo
-                                            </TextBlock>
-                                            <TextBlock IsVisible="{x:Static Core.Resources:Globals.IS_COMMIT_AVAILABLE}">
-                                                - Checks out this commit
-                                            </TextBlock>
-                                            <TextBlock>
-                                                - Initializes submodules
-                                            </TextBlock>
-                                        </StackPanel>
-                                    </ToolTip.Tip>
-
-                                    <avalonia1:MaterialIcon Kind="Git"/>
-                                </Button>
-                                
-                                <Button ToolTip.Tip="View Commit" Classes="AccentHighlight HoverLift" IsVisible="{x:Static Core.Resources:Globals.IS_COMMIT_AVAILABLE}" Click="OpenGitHubLink" Height="30">
-                                    <avalonia1:MaterialIcon Kind="Github"/>
-                                </Button>
-                                
-                                <Button ToolTip.Tip="View License" Classes="AccentHighlight HoverLift" Click="OpenGitHubLicense" Height="30">
-                                    <avalonia1:MaterialIcon Kind="Legal"/>
-                                </Button>
-                            </StackPanel>
-                        </StackPanel>
-                    </Flyout>
-                </Button.Flyout>
+            <Grid IsVisible="{Binding CanLinkProfile}">
+                <Grid x:Name="LinkHoverGlow" Opacity="0" ZIndex="-1" IsVisible="True">
+                    <Border Margin="-35 0 -35 0" Opacity="0.5" Width="35" Background="#0095ff" HorizontalAlignment="Stretch" Height="35">
+                        <Border.Effect>
+                            <BlurEffect Radius="90"/>
+                        </Border.Effect>
+                    </Border>
+                </Grid>
                 
+                <!-- Link Button -->
+                <Button Click="Link_OnClick" Name="Link" Opacity="0.8" IsVisible="{x:Static Core:Globals.ShowVersion}" Background="Transparent" Height="30" HorizontalAlignment="Left" VerticalAlignment="Center" Classes="HoverLift">
+                    <ToolTip.Tip>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">Link a profile to redirect assets that contain editor-only data to builds that include editor-only data</TextBlock>
+                        </StackPanel>
+                    </ToolTip.Tip>
+                    
+                    <StackPanel Cursor="Hand" Orientation="Horizontal" Spacing="10" Background="Transparent">
+                        <avalonia1:MaterialIcon FontSize="18" Kind="Link" Margin="0 5 0 0"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+            
+            <!-- Link Button -->
+            <Button Click="Button_OnClick" Opacity="0.8" IsVisible="{Binding DoesLinkedProfileExist}" Background="Transparent" Height="30" HorizontalAlignment="Left" VerticalAlignment="Center" Classes="HoverLift">
+                <ToolTip.Tip>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">Un-link profile</TextBlock>
+                    </StackPanel>
+                </ToolTip.Tip>
+                    
                 <StackPanel Cursor="Hand" Orientation="Horizontal" Spacing="10" Background="Transparent">
-                    <Image
-                        Source="/Assets/Icon/Scaled/App.Icon.32.png"
-                        Width="18"
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        IsHitTestVisible="False"
-                        Margin="3 0 3 0"/>
-                    
-                    <TextBlock FontFamily="Consolas" Margin="0 5 0 0" Text="{x:Static Core.Resources:Globals.VERSION}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
-                    
-                    <controls:SymbolIcon Symbol="ChevronDown" FontSize="15" Margin="2 0 4 0"/>
+                    <avalonia1:MaterialIcon Margin="0 5 0 0" FontSize="15" Kind="LinkVariantRemove"/>
                 </StackPanel>
             </Button>
+            
+            <Grid IsVisible="{Binding DoesLinkedProfileExist}">
+                <!-- Linked Profile Button -->
+                <Button Click="EditLinkedProfile" Classes="SoftHoverLift" ClipToBounds="False" Name="LinkedProfile" Opacity="{Binding ProfileButtonOpacity}" BorderThickness="0" Padding="10 5 10 5" Background="Transparent" CornerRadius="25">
+                    <Button.Resources>
+                        <ResourceDictionary>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver">Transparent</SolidColorBrush>
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed">Transparent</SolidColorBrush>
+                        </ResourceDictionary>
+                    </Button.Resources>
+                    
+                    <StackPanel Orientation="Horizontal" Spacing="12" Background="Transparent" Cursor="Hand">
+                        <profiles:ProfileSplashControl ZIndex="1" Radius="8" SplashScale="1" DataContext="{Binding LinkedProfile}"/>
+
+                        <!-- Display Name -->
+                        <Grid IsHitTestVisible="False">
+                            <Grid x:Name="LinkedProfileHoverGlow" Opacity="0" ZIndex="-1" IsVisible="True">
+                                <Border Margin="-35 0 -35 0" Opacity="0.3" Background="{Binding TitleBarSecondGradientBrush}" HorizontalAlignment="Stretch" Height="35">
+                                    <Border.Effect>
+                                        <BlurEffect Radius="150"/>
+                                    </Border.Effect>
+                                </Border>
+                            </Grid>
+
+                            <TextBlock Name="LinkedProfileName" MaxWidth="250" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" 
+                                       Text="{Binding LinkedProfileDisplayName}" FontSize="17" FontWeight="DemiBold" 
+                                       VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+                        </Grid>
+                    </StackPanel>
+                </Button>
+            </Grid>
         </window:BaseTitleBar.LeftItems>
 
         <window:BaseTitleBar.RightContent>

@@ -197,6 +197,9 @@
     <Compile Update="Views\Settings\UpdatesSettingsView.cs">
       <DependentUpon>UpdatesSettingsView.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Windows\LinkWindow.cs">
+      <DependentUpon>LinkWindow.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <Target Name="IncludePlugins" BeforeTargets="ResolveProjectReferences">

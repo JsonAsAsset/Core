@@ -30,13 +30,13 @@ public class HomeViewModel : ViewModelBase
         "◡‿◡",
         "ᓚ₍ ^. .^₎",
         "half code, half ritual",
-        "XD",
+        ":DDDDDDDDDD",
         "ᓚᘏᗢ",
         "▲ for your pardon",
         "ㅇㅅㅇ",
         "▲",
         "thank you!",
-        "we appreciate you all!"
+        "we appreciate you!"
     ];
     
     public readonly string[] Tips =

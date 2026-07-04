@@ -148,6 +148,7 @@ public partial class ProfileSelectionViewModel : ViewModelBase
 
         if (CardMap.TryGetValue(profile.FileName, out var card))
         {
+            card.ViewModel.Profile = profile;
             card.ViewModel.UpdateProfileProperties();
 
             var existingBorder = ProfileListPanel.Children

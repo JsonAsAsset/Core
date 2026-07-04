@@ -1,0 +1,214 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:windowModels="clr-namespace:Core.WindowModels"
+    xmlns:window="clr-namespace:Core.Controls.Window"
+    xmlns:controls="clr-namespace:Core.Controls"
+    xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    xmlns:profiles="clr-namespace:Core.Controls.Profiles"
+    x:Name="Root"
+
+    x:Class="Core.Windows.LinkWindow"
+    x:DataType="windowModels:LinkWindowModel"
+
+    Title="Link a Profile"
+    
+    Width="860" Height="700"
+    MinWidth="860" MinHeight="700"
+    
+    mc:Ignorable="d"
+    
+    d:DesignWidth="500"
+    d:DesignHeight="400">
+    
+    <Grid Margin="{Binding $parent[Window].OffScreenMargin}">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+            <Grid Height="{DynamicResource TitleBarHeight}" Grid.Row="0" IsHitTestVisible="False"/>
+
+            <!-- Navigation -->
+            <Grid Grid.Row="1" Background="{DynamicResource BackgroundBrush}">
+                <window:BaseTitleBar VerticalAlignment="Top" Height="{DynamicResource TitleBarHeight}" Margin="{DynamicResource TitleBarNegativeTopMargin}">
+                    <window:BaseTitleBar.LeftItems>
+                        <Border IsHitTestVisible="False" MaxWidth="300" HorizontalAlignment="Center">
+                            <TextBlock Text="Link a Profile"
+                                       TextTrimming="CharacterEllipsis"
+                                       TextWrapping="NoWrap"
+                                       IsHitTestVisible="False"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="15"/>
+                        </Border>
+                    </window:BaseTitleBar.LeftItems>
+
+                    <window:BaseTitleBar.RightContent>
+                    </window:BaseTitleBar.RightContent>
+                </window:BaseTitleBar>
+            </Grid>
+            
+            <ScrollViewer Grid.Row="2"
+                          Margin="32 0 32 0"
+                          VerticalAlignment="Stretch"
+                          HorizontalAlignment="Stretch"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Profiles}"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Margin="0 15 0 20"
+                                        Orientation="Vertical"
+                                        Spacing="0"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Classes="SoftHoverLift"
+                                    HorizontalAlignment="Stretch"
+                                    Padding="10"
+                                    Background="{Binding Background}"
+                                    Command="{Binding #Root.DataContext.SelectProfileCommand}"
+                                    CommandParameter="{Binding}">
+                                <Grid>
+                                    <profiles:ProfileSplashControl HorizontalAlignment="Left"
+                                           Radius="10"
+                                           SplashScale="2"
+                                           DataContext="{Binding Profile}"/>
+
+                                    <StackPanel Margin="85 0 0 0"
+                                                VerticalAlignment="Center"
+                                                Spacing="3">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="18"
+                                                   Opacity="0.94"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White"/>
+                                    </StackPanel>
+
+                                    <Border Height="40" Width="40" Opacity="{Binding IsSelected}" CornerRadius="5" HorizontalAlignment="Right" Padding="5">
+                                        <avalonia:MaterialIcon Kind="Link" FontSize="25" Foreground="White"/>
+                                    </Border>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Action Bar -->
+            <Grid Grid.Row="3" Background="{DynamicResource BackgroundBrush}">
+                <Grid>
+                    <controls:CursorEffectControl ClipToBounds="False"/>
+                    
+                    <StackPanel Orientation="Horizontal"
+                                Height="60"
+                                Margin="25 0 0 5"
+                                HorizontalAlignment="Left"
+                                Spacing="10"
+                                VerticalAlignment="Bottom">
+                    </StackPanel>
+                    
+                    <UniformGrid HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Rows="1" ColumnSpacing="10" Margin="32 0 32 32">
+                        <Button Content="Dismiss"
+                                Classes="ContentSecondary SoftHoverLift"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                CornerRadius="5"
+                                Click="Close"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"/>
+                
+                        <Button Content="Link"
+                                Classes="ContentPrimary SoftHoverLift"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                CornerRadius="5"
+                                Click="PrimaryButtonClick"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"/>
+                    </UniformGrid>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+    
+    <!--
+    <Grid Margin="{Binding $parent[Window].OffScreenMargin}">
+        <Grid>
+            <ScrollViewer Margin="32 0 32 70"
+                          VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Profiles}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Margin="0 15 30 20" Orientation="Vertical" Spacing="10"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Classes="SoftHoverLift"
+                                    HorizontalAlignment="Stretch"
+                                    Padding="10"
+                                    Background="{Binding Background}"
+                                    HorizontalContentAlignment="Left"
+                                    Command="{Binding #Root.DataContext.SelectProfileCommand}"
+                                    CommandParameter="{Binding}">
+                                <Grid HorizontalAlignment="Left" ColumnDefinitions="72,*,Auto" ColumnSpacing="10">
+                                    <profiles:ProfileSplashControl Grid.Column="0"
+                                                                   ZIndex="1"
+                                                                   Radius="15"
+                                                                   SplashScale="2"
+                                                                   DataContext="{Binding Profile}"/>
+
+                                    <StackPanel Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Spacing="3">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="18"
+                                                   Opacity="0.94"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="White"/>
+                                    </StackPanel>
+
+                                    <Border Height="25" Opacity="{Binding IsSelected}" Grid.Column="2" Background="White" CornerRadius="5" HorizontalAlignment="Left" Padding="5">
+                                        <avalonia:MaterialIcon Kind="Link" Foreground="Black"/>
+                                    </Border>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            
+            <UniformGrid HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Rows="1" ColumnSpacing="10" Margin="32">
+                <Button Content="Dismiss"
+                        Classes="ContentSecondary SoftHoverLift"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        CornerRadius="5"
+                        Click="Close"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+                
+                <Button Content="Link"
+                        Classes="ContentPrimary SoftHoverLift"
+                        HorizontalAlignment="Stretch"
+                        VerticalAlignment="Stretch"
+                        CornerRadius="5"
+                        Click="PrimaryButtonClick"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"/>
+            </UniformGrid>
+
+            <Grid HorizontalAlignment="Right" VerticalAlignment="Top">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+                    <CaptionButtons Name="captionButtons"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>-->
+</Window>

@@ -11,6 +11,8 @@
     xmlns:profiles="clr-namespace:Core.Controls.Profiles"
     xmlns:viewModels1="clr-namespace:Core.ViewModels"
     xmlns:framework="clr-namespace:Core.Services.Framework"
+    xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    xmlns:Core.Resources="clr-namespace:Core.Resources;assembly=Core.Resources"
 
     x:Class="Core.Views.SettingsView"
     x:DataType="viewModels1:SettingsViewModel"
@@ -165,6 +167,73 @@
                     Margin="0 0 25 0" FontSize="35"
                     IconVariant="Regular"/>
             </Grid>
+        </Button>
+                    
+        <!-- Version Button -->
+        <Button IsVisible="{x:Static Core:Globals.ShowVersion}" Margin="20" Height="33" HorizontalAlignment="Left" VerticalAlignment="Bottom" Classes="SoftHoverLift">
+            <Button.Flyout>
+                <Flyout Placement="Bottom" VerticalOffset="3">
+                    <StackPanel Spacing="15" Margin="5">
+                        <StackPanel Orientation="Horizontal" Spacing="12" Margin="0 0 8 0">
+                            <Border Width="40" Height="40" CornerRadius="10" Background="Black" BorderThickness="1" BorderBrush="#1f2023">
+                                <Image
+                                    Source="/Assets/Icon/Scaled/App.Icon.32.png"
+                                    Width="20"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    IsHitTestVisible="False"
+                                    Margin="0 0 0 0"/>
+                            </Border>
+
+                            <StackPanel HorizontalAlignment="Left" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center" Text="{x:Static Core.Resources:Globals.VERSION}"/>
+                                <TextBlock IsVisible="{x:Static Core.Resources:Globals.IS_COMMIT_AVAILABLE}" FontSize="12" Opacity="0.5" Text="{x:Static Core.Resources:Globals.COMMIT}"/>
+                            </StackPanel>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
+                            <Button Click="CopyGitCloneCommand" Cursor="Hand" Classes="AccentHighlight HoverLift" Height="30">
+                                <ToolTip.Tip>
+                                    <StackPanel MaxWidth="250">
+                                        <TextBlock>
+                                            Copies a one-line Git command that:
+                                        </TextBlock>
+                                        <TextBlock>
+                                            - Clones this repo
+                                        </TextBlock>
+                                        <TextBlock IsVisible="{x:Static Core.Resources:Globals.IS_COMMIT_AVAILABLE}">
+                                            - Checks out this commit
+                                        </TextBlock>
+                                        <TextBlock>
+                                            - Initializes submodules
+                                        </TextBlock>
+                                    </StackPanel>
+                                </ToolTip.Tip>
+
+                                <avalonia:MaterialIcon Kind="Git"/>
+                            </Button>
+                            
+                            <Button ToolTip.Tip="View Commit" Classes="AccentHighlight HoverLift" IsVisible="{x:Static Core.Resources:Globals.IS_COMMIT_AVAILABLE}" Click="OpenGitHubLink" Height="30">
+                                <avalonia:MaterialIcon Kind="Github"/>
+                            </Button>
+                            
+                            <Button ToolTip.Tip="View License" Classes="AccentHighlight HoverLift" Click="OpenGitHubLicense" Height="30">
+                                <avalonia:MaterialIcon Kind="Legal"/>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Flyout>
+            </Button.Flyout>
+            
+            <StackPanel Cursor="Hand" Orientation="Horizontal" Spacing="10" Background="Transparent">
+                <Image
+                    Source="/Assets/Icon/Scaled/App.Icon.32.png"
+                    Width="14"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    IsHitTestVisible="False"
+                    Margin="3 0 3 0"/>
+            </StackPanel>
         </Button>
     </Grid>
 </UserControl>

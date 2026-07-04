@@ -71,6 +71,12 @@ public class CloudApiController : ControllerBase
     
     public static void SetSecondaryProfile(BaseProfile profile)
     {
+        if (profile == null)
+        {
+            SecondaryBaseProfiles = [];
+            return;
+        }
+        
         var list = SecondaryBaseProfiles.ToList();
 
         if (list.Count > 0)
@@ -447,10 +453,8 @@ public class CloudApiController : ControllerBase
         return NotFoundResponse;
     }
     
-    /*
-     * If the path exists on the main profile, it'll check if other profiles specifically override the main profile, if so it'll pick that, else it'll give the one found initially
-     * If the path doesn't exist on a main profile, it'll cycle through each profile to find one that has the asset existing
-     */
+    /* If the path exists on the main profile, it'll check if other profiles specifically override the main profile, if so it'll pick that, else it'll give the one found initially
+     * If the path doesn't exist on a main profile, it'll cycle through each profile to find one that has the asset existing */
     private static BaseProfile FindBaseProfileForPath(string rawPath, out bool found)
     {
         var path = rawPath.SubstringBefore('.');
@@ -466,7 +470,13 @@ public class CloudApiController : ControllerBase
                 if (!profile.Provider.TryLoadPackage(path, package: out var package)) continue;
                 var assetType = package.GetExports().FirstOrDefault()?.ExportType;
 
-                if (assetType is not null && profile.SecondaryAssetTypes.Contains(assetType, StringComparer.OrdinalIgnoreCase))
+                string[] EditorOnlyTypes =
+                [
+                    "Material",
+                    "MaterialFunction",
+                ];
+
+                if (assetType is not null && EditorOnlyTypes.Contains(assetType, StringComparer.OrdinalIgnoreCase))
                 {
                     return profile;
                 }

@@ -106,4 +106,21 @@ public partial class SettingsView : ViewBase<SettingsViewModel>
     {
         MainWM.CurrentProfile!.OpenEditor();
     }
+    
+    public void OpenGitHubLink(object? sender, RoutedEventArgs e)
+    {
+        AppService.OpenLink($"{GITHUB_COMMIT_LINK}/{COMMIT}");
+    }
+    
+    public void OpenGitHubLicense(object? sender, RoutedEventArgs e)
+    {
+        AppService.OpenLink($"{GITHUB_LINK}/blob/main/LICENSE");
+    }
+
+    private void CopyGitCloneCommand(object? sender, RoutedEventArgs e)
+    {
+        App.CopyText(IS_COMMIT_AVAILABLE
+            ? $"git clone --recurse-submodules {GITHUB_LINK}.git && cd {GITHUB_REPO_NAME} && git checkout {COMMIT} && git submodule update --init --recursive\n"
+            : $"git clone --recurse-submodules {GITHUB_LINK}.git && cd {GITHUB_REPO_NAME} && git submodule update --init --recursive\n");
+    }
 }

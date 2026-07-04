@@ -57,6 +57,7 @@ public partial class MainWindowModel : WindowModelBase
     [NotifyPropertyChangedFor(nameof(ProfileDisplayName))]
     [NotifyPropertyChangedFor(nameof(DoesProfileExist))]
     [NotifyPropertyChangedFor(nameof(IsProfileInitialized))]
+    [NotifyPropertyChangedFor(nameof(CanLinkProfile))]
     [NotifyPropertyChangedFor(nameof(Title))]
     private Profile? _currentProfile;
 
@@ -79,6 +80,21 @@ public partial class MainWindowModel : WindowModelBase
     public bool IsProfileInitialized => CurrentProfile?.IsInitialized ?? false;
     
     public double ProfileButtonOpacity => Math.Max(TitleBarOpacity, 0.5);
+    
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DoesLinkedProfileExist))]
+    [NotifyPropertyChangedFor(nameof(CanLinkProfile))]
+    [NotifyPropertyChangedFor(nameof(LinkedProfileDisplayName))]
+    private Profile? _linkedProfile;
+    
+    partial void OnLinkedProfileChanged(Profile? value)
+    {
+        CloudApiController.SetSecondaryProfile(value!);
+    }
+    
+    public string LinkedProfileDisplayName => LinkedProfile?.Name ?? "Unknown";
+    public bool DoesLinkedProfileExist => LinkedProfile is not null;
+    public bool CanLinkProfile => LinkedProfile == null && CurrentProfile != null;
 
     /* ~~~ Lifecycle Methods ~~~ */
     public new void Initialize()
@@ -143,6 +159,11 @@ public partial class MainWindowModel : WindowModelBase
     public void RequestEditProfile()
     {
         CurrentProfile?.OpenEditor();
+    }
+    
+    public void RequestEditLinkedProfile()
+    {
+        LinkedProfile?.OpenEditor();
     }
     
     /* ~~~ Status Transitions ~~~ */

@@ -23,4 +23,9 @@ public partial class MainWindow : WindowBase<MainWindowModel>
     {  
         WindowModel.RequestEditProfile();
     }
+    
+    public void OnEditLinkedProfile(object? sender, RoutedEventArgs e)
+    {  
+        WindowModel.RequestEditLinkedProfile();
+    }
 }

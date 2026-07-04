@@ -35,8 +35,8 @@ public static class Globals
     public const string DISCORD_ACTIVITY_ID = "1386505366061453533";
     
     /* General Links */
-    public const string X_LINK = "https://x.com/t3ctor";
-    public const string DONATE_LINK = "https://ko-fi.com/t4ctor";
+    public const string X_LINK = "https://x.com/Tectory";
+    public const string DONATE_LINK = "https://ko-fi.com/Tectory";
     
     /* Other Constants */
     public static readonly FGuid ZERO_GUID = new();

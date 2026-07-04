@@ -8,7 +8,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
-
+using Core.Extensions;
 using Core.Services;
 using Core.Services.Framework;
 using Core.Windows;
@@ -26,6 +26,7 @@ public partial class TitleBar : UserControl
             Dispatcher.UIThread.Post(() =>
             {
                 AttachGlow(Profile, "ProfileHoverGlow");
+                AttachGlow(Link, "LinkHoverGlow");
             }, DispatcherPriority.Loaded);
         };
     }
@@ -114,26 +115,48 @@ public partial class TitleBar : UserControl
     }
     
     private void EditProfile(object? sender, RoutedEventArgs e) => (VisualRoot as MainWindow)?.OnEditProfile(sender, e);
+    private void EditLinkedProfile(object? sender, RoutedEventArgs e) => (VisualRoot as MainWindow)?.OnEditLinkedProfile(sender, e);
 
     private void RestartAPI(object? sender, RoutedEventArgs e)
     {
         AppServices.Cloud.Restart();
     }
-    
-    public void OpenGitHubLink(object? sender, RoutedEventArgs e)
+
+    private LinkWindow? _linkWindow;
+
+    private void Link_OnClick(object? sender, RoutedEventArgs e)
     {
-        AppService.OpenLink($"{GITHUB_COMMIT_LINK}/{COMMIT}");
-    }
-    
-    public void OpenGitHubLicense(object? sender, RoutedEventArgs e)
-    {
-        AppService.OpenLink($"{GITHUB_LINK}/blob/main/LICENSE");
+        if (_linkWindow is { IsVisible: true })
+        {
+            _linkWindow.Activate();
+            _linkWindow.Focus();
+            return;
+        }
+
+        if (this.GetVisualRoot() is not Window window)
+        {
+            return;
+        }
+
+        _linkWindow = new LinkWindow();
+        _linkWindow.Closed += (_, _) => _linkWindow = null;
+        _linkWindow.CenterToScreen(window);
+
+        _ = _linkWindow.ShowDialog(window);
     }
 
-    private void CopyGitCloneCommand(object? sender, RoutedEventArgs e)
+    private void Button_OnClick(object? sender, RoutedEventArgs e)
     {
-        App.CopyText(IS_COMMIT_AVAILABLE
-            ? $"git clone --recurse-submodules {GITHUB_LINK}.git && cd {GITHUB_REPO_NAME} && git checkout {COMMIT} && git submodule update --init --recursive\n"
-            : $"git clone --recurse-submodules {GITHUB_LINK}.git && cd {GITHUB_REPO_NAME} && git submodule update --init --recursive\n");
+        if (MainWM.LinkedProfile is not null)
+        {
+            Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                MainWM.LinkedProfile.DisposeProvider();
+
+                ProfileSelectionVM.UpdateProfileCard(MainWM.LinkedProfile);
+                
+                MainWM.LinkedProfile = null;
+            });
+        }
     }
 }
