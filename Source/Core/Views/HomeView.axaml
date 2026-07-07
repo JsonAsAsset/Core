@@ -88,7 +88,7 @@
                         Orientation="Horizontal" Spacing="15">
                         
                         <!-- Get Started button -->
-                        <Button Click="GetStarted" CornerRadius="50"
+                        <Button Click="GetStarted" CornerRadius="5"
                                 Classes="GlassWhite PressScale HoverLift"
                                 Padding="25 15"
                                 Cursor="Hand" HorizontalAlignment="Stretch"
@@ -96,7 +96,7 @@
                                 HorizontalContentAlignment="Center"
                                 VerticalContentAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock FontWeight="Bold" FontSize="19">sure!</TextBlock>
+                                <TextBlock FontWeight="Bold" FontSize="19">Start a Profile</TextBlock>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -143,7 +143,7 @@
                                         </Viewbox>
                                     </Grid>
                                     
-                                    <TextBlock Foreground="White" FontWeight="DemiBold" FontSize="19" ZIndex="-1">support us :)</TextBlock>
+                                    <TextBlock Foreground="White" FontWeight="DemiBold" FontSize="19" ZIndex="-1">support us!</TextBlock>
                                 </StackPanel>
                             </Button>
                         </Grid>
