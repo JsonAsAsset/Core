@@ -23,7 +23,7 @@ public class UpdateService : IService
 
     private GitHubReleaseResponse LatestRelease = null!;
     private Version LatestReleaseVersion = null!;
-    private bool ShowAllModels = false;
+    private bool ShowAllModels = true;
 
     private void ShowModel()
     {
@@ -35,8 +35,6 @@ public class UpdateService : IService
             if (CurrentVersion > LatestReleaseVersion) return;
         }
         
-        return;
-
         var win = new GalleryWindow
         {
             Height = 678
@@ -45,11 +43,11 @@ public class UpdateService : IService
         win.CenterToScreen(MainWM.Window);
         win.Show();
         
-        win.WM.Title = "Sync To FModel";
+        win.WM.Title = "Link Editor Only Profile";
         win.WM.Tag = true;
         win.WM.TagType = TagType.New;
         win.WM.SecondaryButtonEnabled = false;
-        win.WM.Description = "Automatically refreshes FModel's directories based on your profiles, improving consistency, and reducing manual setup.";
+        win.WM.Description = "Link two builds together so your main build can stay stripped of editor-only data while a linked profile provides the editor data it needs, such as materials and material functions.";
     }
 
     private async Task UpdateVersioning()

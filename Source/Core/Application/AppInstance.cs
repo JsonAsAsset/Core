@@ -11,6 +11,7 @@ using Serilog;
 using Core.Services.Framework;
 using Core.Resources.Models;
 using Core.Windows;
+using CUE4Parse_Conversion.Textures;
 
 namespace Core.Application;
 
@@ -44,6 +45,7 @@ public class AppInstance : Avalonia.Application
             
             Log.Information($"Core version: {VERSION}");
             _ = NativeLibraryLoader.Load(RuntimeFolder);
+            TextureDecoder.UseAssetRipperTextureDecoder = false;
 
             AppServices.Plugins.Load();
 

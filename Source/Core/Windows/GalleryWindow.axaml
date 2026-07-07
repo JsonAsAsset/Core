@@ -47,9 +47,21 @@
                 </Border.Effect>
             </Border>
             
-            <Grid VerticalAlignment="Stretch">
+            <Grid VerticalAlignment="Top" RowDefinitions="Auto,*">
+                <Grid Height="381" Width="800" IsHitTestVisible="False">
+                    <Image HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                           IsVisible="{Binding IsNew}"
+                           Source="/Assets/Thumbnails/0.0.5.2.png">
+                        <Image.OpacityMask>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                <GradientStop Color="#FF000000" Offset="0.8" />
+                                <GradientStop Color="#00000000" Offset="1" />
+                            </LinearGradientBrush>
+                        </Image.OpacityMask>
+                    </Image>
+                </Grid>
 
-                <StackPanel Margin="32 0 32 100" Spacing="20" VerticalAlignment="Bottom">
+                <StackPanel Grid.Row="1" Margin="32 0 32 100" Spacing="20" VerticalAlignment="Bottom">
                     <Border IsVisible="{Binding Tag}" Background="{Binding TagBackground}" CornerRadius="10" HorizontalAlignment="Left" Padding="10">
                         <TextBlock Name="TagText" Text="{Binding TagText}" FontSize="15" Foreground="{Binding TagForeground}"/>
                     </Border>
