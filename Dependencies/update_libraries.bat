@@ -1,4 +1,4 @@
-cd Dependencies/CUE4Parse
+cd CUE4Parse
 git fetch
 git checkout master
 git pull
