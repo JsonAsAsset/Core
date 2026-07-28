@@ -13,7 +13,7 @@
 </div>
 
 ### Description
-Core is an **extension** of [JsonAsAsset](https://github.com/JsonAsAsset/JsonAsAsset) that fetches almost every referenced asset for you, hands-free.
+Core is an **extension** of [Reflection](https://github.com/JsonAsAsset/Reflection) that fetches almost every referenced asset for you, hands-free.
 
 ### Licensing
 
