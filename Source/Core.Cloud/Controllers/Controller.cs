@@ -28,7 +28,7 @@ namespace Core.Cloud.Controllers;
 [Route("api")]
 [ApiController]
 [ApiExplorerSettings(IgnoreApi = true)]
-public class CloudApiController : ControllerBase
+public partial class CloudApiController : ControllerBase
 {
     /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
     private static IEnumerable<BaseProfile> SecondaryBaseProfiles = [];
@@ -67,16 +67,19 @@ public class CloudApiController : ControllerBase
         }
 
         MainProfile = profile;
+        InvalidateValidationIndex();
     }
-    
+
     public static void SetSecondaryProfile(BaseProfile profile)
     {
+        InvalidateValidationIndex();
+
         if (profile == null)
         {
             SecondaryBaseProfiles = [];
             return;
         }
-        
+
         var list = SecondaryBaseProfiles.ToList();
 
         if (list.Count > 0)
@@ -129,15 +132,21 @@ public class CloudApiController : ControllerBase
         
         List<string> paths = [];
 
+        var provider = MainProfile!.Provider;
+
+        /* Taken from the loaded profile rather than hardcoded, so this isn't tied to one title */
+        var contentRoot = provider.ProjectName + "/Content";
+
         paths.AddRange(
-        MainProfile?.Provider!.Files.Values!
-            .Select(a => a?.PathWithoutExtension)
-            .Where(p =>
-                p.Contains("/HLOD/") &&
-                p.Contains("/Maps/") &&
-                p.Contains("FortniteGame/Content") &&
-                !p.EndsWith(".o"))
-            .Distinct()
+            provider.Files.Values
+                .Select(a => a?.PathWithoutExtension)
+                .Where(p =>
+                    p is not null &&
+                    p.Contains("/HLOD/") &&
+                    p.Contains("/Maps/") &&
+                    p.Contains(contentRoot) &&
+                    !p.EndsWith(".o"))
+                .Distinct()!
         );
 
         return new JsonResult(new
