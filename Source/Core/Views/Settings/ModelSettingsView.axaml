@@ -1,14 +1,12 @@
-<UserControl
+﻿<UserControl
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
     xmlns:extensions="clr-namespace:Core.Resources.Extensions;assembly=Core.Resources"
-    xmlns:meshes="clr-namespace:CUE4Parse_Conversion.Meshes;assembly=CUE4Parse-Conversion"
-    xmlns:enums="clr-namespace:CUE4Parse_Conversion.UEFormat.Enums;assembly=CUE4Parse-Conversion"
-    xmlns:nanite="clr-namespace:CUE4Parse.UE4.Assets.Exports.Nanite;assembly=CUE4Parse"
-    xmlns:textures="clr-namespace:CUE4Parse_Conversion.Textures;assembly=CUE4Parse-Conversion"
+    xmlns:options="clr-namespace:CUE4Parse_Conversion.Options;assembly=CUE4Parse-Conversion"
+    xmlns:enums="clr-namespace:CUE4Parse_Conversion.Writers.UEFormat.Enums;assembly=CUE4Parse-Conversion"
     xmlns:material="clr-namespace:CUE4Parse.UE4.Assets.Exports.Material;assembly=CUE4Parse"
     xmlns:settings="clr-namespace:Core.ViewModels.Settings"
 
@@ -28,13 +26,13 @@
                 
                 <controls:SettingsExpander Header="Level Of Detail" Description="Select the desired mesh detail level. Higher levels provide less geometry detail.">
                     <controls:SettingsExpander.Footer>
-                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type meshes:ELodFormat}}" SelectedItem="{Binding LodFormat, Converter={StaticResource EnumToRecord}}"/>
+                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type options:EMeshQuality}}" SelectedItem="{Binding LodFormat, Converter={StaticResource EnumToRecord}}"/>
                     </controls:SettingsExpander.Footer>
                 </controls:SettingsExpander>
                 
                 <controls:SettingsExpander Header="File Format" Description="Select the file format used for exporting 3D models.">
                     <controls:SettingsExpander.Footer>
-                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type meshes:EMeshFormat}}" SelectedItem="{Binding Format, Converter={StaticResource EnumToRecord}}"/>
+                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type options:EMeshFormat}}" SelectedItem="{Binding Format, Converter={StaticResource EnumToRecord}}"/>
                     </controls:SettingsExpander.Footer>
                 </controls:SettingsExpander>
                 
@@ -54,7 +52,7 @@
                 
                 <controls:SettingsExpander Header="Embed Format" Description="Choose how materials are included in the export." IsVisible="{Binding EmbedMaterials}">
                     <controls:SettingsExpander.Footer>
-                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type material:EMaterialFormat}}" SelectedItem="{Binding MaterialFormat, Converter={StaticResource EnumToRecord}}"/>
+                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type material:EMaterialDepth}}" SelectedItem="{Binding MaterialFormat, Converter={StaticResource EnumToRecord}}"/>
                     </controls:SettingsExpander.Footer>
                 </controls:SettingsExpander>
                 
@@ -62,7 +60,7 @@
                 
                 <controls:SettingsExpander Header="Socket Format" Description="Select how sockets are baked into exported files." IsVisible="{Binding IsActorXFormat}">
                     <controls:SettingsExpander.Footer>
-                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type meshes:ESocketFormat}}" SelectedItem="{Binding SocketFormat, Converter={StaticResource EnumToRecord}}"/>
+                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type options:ESocketFormat}}" SelectedItem="{Binding SocketFormat, Converter={StaticResource EnumToRecord}}"/>
                     </controls:SettingsExpander.Footer>
                 </controls:SettingsExpander>
                 
@@ -76,13 +74,13 @@
                 
                 <controls:SettingsExpander Header="Nanite" Description="Set the export format for high-density Nanite meshes.">
                     <controls:SettingsExpander.Footer>
-                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type nanite:ENaniteMeshFormat}}" SelectedItem="{Binding NaniteFormat, Converter={StaticResource EnumToRecord}}"/>
+                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type options:ENaniteMeshFormat}}" SelectedItem="{Binding NaniteFormat, Converter={StaticResource EnumToRecord}}"/>
                     </controls:SettingsExpander.Footer>
                 </controls:SettingsExpander>
                 
                 <controls:SettingsExpander Header="Texture" Description="Choose the image format for textures.">
                     <controls:SettingsExpander.Footer>
-                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type textures:ETextureFormat}}" SelectedItem="{Binding TextureFormat, Converter={StaticResource EnumToRecord}}"/>
+                        <ComboBox Cursor="Hand" ItemsSource="{extensions:EnumToItemsSource {x:Type options:ETextureFormat}}" SelectedItem="{Binding TextureFormat, Converter={StaticResource EnumToRecord}}"/>
                     </controls:SettingsExpander.Footer>
                 </controls:SettingsExpander>
             </StackPanel>

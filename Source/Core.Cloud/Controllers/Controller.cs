@@ -1,5 +1,6 @@
 using CUE4Parse_Conversion;
-using CUE4Parse_Conversion.Meshes;
+using CUE4Parse_Conversion.Exporters;
+using CUE4Parse_Conversion.Options;
 using CUE4Parse_Conversion.Sounds;
 using CUE4Parse_Conversion.Textures;
 using CUE4Parse.UE4.Assets.Exports;
@@ -303,33 +304,36 @@ public partial class CloudApiController : ControllerBase
     
     private static JsonResult ProcessStaticMesh(UStaticMesh staticMesh)
     {
-        var exporterOptions = new ExporterOptions
+        var options = new ExportOptions(
+            meshFormat: EMeshFormat.ActorX,
+            exportMaterials: false,
+            exportMorphTargets: false
+        );
+
+        var session = new ExportSession();
+        session.Add(staticMesh);
+
+        /* The session picks the paths and writes the files itself now, so there is no laying out
+         * of directories left to do here. Waited on because the controller is synchronous. */
+        var results = session
+            .RunAsync(Globals.RuntimeFolder.FullName, options)
+            .GetAwaiter()
+            .GetResult();
+
+        var result = results.FirstOrDefault(Result => Result.Success);
+        var filePath = result?.DiskFilePaths?.FirstOrDefault();
+
+        if (filePath is null)
         {
-            MeshFormat = EMeshFormat.ActorX,
-            ExportMaterials = false,
-            ExportMorphTargets = false
-        };
-
-        var exporter = new MeshExporter(staticMesh, exporterOptions);
-
-        var input = staticMesh.GetPathName();
-        input = input.Substring(0, input.LastIndexOf(".", StringComparison.Ordinal));
-            
-        var directory = Path.Combine(Globals.RuntimeFolder.FullName, input);
-        var output = new FileInfo(directory + ".pskx");
-
-        if (!output.Exists)
-        {
-            Directory.CreateDirectory(path: Path.GetDirectoryName(directory)!);
+            return new JsonResult(new
+            {
+                errored = true,
+                exceptionstring = results.FirstOrDefault()?.Error?.Message ?? "Static mesh export produced no files"
+            })
+            {
+                StatusCode = StatusCodes.Status500InternalServerError
+            };
         }
-
-        var newLod = exporter.MeshLods[0];
-        var newFilePath = newLod.FileName[..newLod.FileName.LastIndexOf('/')];
-        
-        newFilePath = newFilePath[..newFilePath.LastIndexOf('/')] + "/" + staticMesh.Name + ".pskx";
-
-        newLod = new Mesh(newFilePath, newLod.FileData, newLod.Materials);
-        newLod.TryWriteToDir(new DirectoryInfo(Globals.RuntimeFolder.FullName), out var label, out var filePath);
 
         return new JsonResult(new
         {

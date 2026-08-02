@@ -1,10 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
-using CUE4Parse_Conversion.Meshes;
-using CUE4Parse_Conversion.Textures;
-using CUE4Parse_Conversion.UEFormat.Enums;
+using CUE4Parse_Conversion.Options;
+using CUE4Parse_Conversion.Writers.UEFormat.Enums;
 using CUE4Parse.UE4.Assets.Exports.Material;
-using CUE4Parse.UE4.Assets.Exports.Nanite;
 
 using Core.Framework.Models;
 
@@ -24,13 +22,16 @@ public partial class ModelSettingsViewModel : ViewModelBase
     
     [ObservableProperty] private ESocketFormat _socketFormat = ESocketFormat.None;
     
-    [ObservableProperty] private ENaniteMeshFormat _naniteFormat = ENaniteMeshFormat.OnlyNaniteLOD;
+    /* OnlyNaniteLOD was renamed NaniteOnly upstream, same member */
+    [ObservableProperty] private ENaniteMeshFormat _naniteFormat = ENaniteMeshFormat.NaniteOnly;
     
-    [ObservableProperty] private EMaterialFormat _materialFormat = EMaterialFormat.FirstLayer;
-    
+    /* EMaterialFormat became EMaterialDepth upstream, FirstLayer became TopLayerOnly */
+    [ObservableProperty] private EMaterialDepth _materialFormat = EMaterialDepth.TopLayerOnly;
+
     [ObservableProperty] private ETextureFormat _textureFormat = ETextureFormat.Png;
-    
-    [ObservableProperty] private ELodFormat _lodFormat;
+
+    /* ELodFormat became EMeshQuality upstream, its first member still means the highest LOD */
+    [ObservableProperty] private EMeshQuality _lodFormat;
     
     [ObservableProperty] private bool _embedMaterials;
     
