@@ -7,6 +7,7 @@ using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Sound;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;
 using CUE4Parse.UE4.Assets.Exports.Texture;
+using CUE4Parse.UE4.Objects.Engine.VectorField;
 using CUE4Parse.UE4.Objects.Meshes;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.Utils;
@@ -295,6 +296,9 @@ public partial class CloudApiController : ControllerBase
         /* Switch on Class Type */
         return localObject switch
         {
+            /* Only intercepted when the caller asks for bytes, a json export of a vector field is
+             * still just its properties */
+            UVectorFieldStatic vectorField when contentType == "application/octet-stream" => ProcessVectorField(vectorField),
             UTexture texture => ProcessTexture(texture, contentType!),
             USoundWave wave => ProcessSoundWave(wave),
             UStaticMesh staticMesh => ProcessStaticMesh(staticMesh),
@@ -361,6 +365,24 @@ public partial class CloudApiController : ControllerBase
         }
 
         return File(textureData.Encode(ETextureFormat.Png, false, out _), "image/png");
+    }
+
+    /* Return the source volume of a vector field, one FFloat16Color per voxel */
+    private ActionResult ProcessVectorField(UVectorFieldStatic vectorField)
+    {
+        var volumeData = vectorField.SourceData.Data;
+
+        if (volumeData is null || volumeData.Length == 0)
+        {
+            return Conflict(new
+            {
+                errored = true,
+                exceptionstring = "No source data on the vector field, returned raw export as json",
+                exports = new[] { vectorField }
+            });
+        }
+
+        return File(volumeData, "application/octet-stream");
     }
 
     /* Return a sound wave file format */
