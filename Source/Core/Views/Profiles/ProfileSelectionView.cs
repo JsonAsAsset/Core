@@ -50,9 +50,10 @@ public partial class ProfileSelectionView : ViewBase<ProfileSelectionViewModel>
 
     private void UpdateCardWidths()
     {
-        if (ProfileListPanel?.Bounds.Width <= 0) return;
+        /* A null panel made the old check fall through to a dereference, since null <= 0 is false */
+        if (ProfileListPanel is null || ProfileListPanel.Bounds.Width <= 0) return;
 
-        var availableWidth = ProfileListPanel!.Bounds.Width;
+        var availableWidth = ProfileListPanel.Bounds.Width;
         const double minCardWidth = 430;
         const double cardSpacing = 5;
 
@@ -64,8 +65,7 @@ public partial class ProfileSelectionView : ViewBase<ProfileSelectionViewModel>
 
         foreach (var control in ProfileListPanel.Children)
         {
-            var border = (Border)control;
-            if (border.Child is ProfileCard)
+            if (control is Border { Child: ProfileCard } border)
             {
                 border.Width = cardWidth;
             }

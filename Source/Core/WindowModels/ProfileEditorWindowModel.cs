@@ -32,7 +32,7 @@ public partial class ProfileEditorWindowModel : ProfileEditorViewModel
 
     /* ~~~ Observable Properties ~~~ */
     [ObservableProperty] 
-    private string? _titleBarText = "New Profile";
+    private string? _titleBarText = "";
     
     /* ~~~ Computed Properties ~~~ */
     public object SaveChangesText => 
@@ -131,7 +131,7 @@ public partial class ProfileEditorWindowModel : ProfileEditorViewModel
     
     private void OnProfileNameChanged()
     {
-        TitleBarText = Profile!.IsNameEmpty ? "New Profile" : $"Editing {Profile.Name}";
+        TitleBarText = Profile!.IsNameEmpty ? "" : $"Editing {Profile.Name}";
         Profile.ResolvePluginHandler();
         HasArchiveResolver = Profile!.Plugins.Any(p => p is IArchiveResolverPlugin);
     }

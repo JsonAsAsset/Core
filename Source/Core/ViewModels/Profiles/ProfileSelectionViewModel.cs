@@ -100,6 +100,13 @@ public partial class ProfileSelectionViewModel : ViewModelBase
             hasLoadedProfiles = true;
         }
         
+        /* Navigating back to this tab builds a new view and re-runs this, so the previous
+         * generation has to let go of the clock before it is dropped */
+        foreach (var viewModel in ViewModelMap.Values)
+        {
+            viewModel.Release();
+        }
+
         CardMap.Clear();
         ViewModelMap.Clear();
 
@@ -163,10 +170,13 @@ public partial class ProfileSelectionViewModel : ViewModelBase
         if (ProfileListPanel is null)
         {
             HasNoMatches = false;
+            OnPropertyChanged(nameof(CountLabel));
+
             return;
         }
 
         PruneWrappers();
+        PruneViewModels();
 
         var ordered = Order(CardMap.Values.Where(card => card.ViewModel.Profile is not null).ToList());
 
@@ -245,6 +255,16 @@ public partial class ProfileSelectionViewModel : ViewModelBase
         {
             WrapperMap[card].Child = null;
             WrapperMap.Remove(card);
+        }
+    }
+
+    /* A deleted profile leaves its view model behind, which would keep ticking on the clock */
+    private void PruneViewModels()
+    {
+        foreach (var fileName in ViewModelMap.Keys.Where(fileName => !CardMap.ContainsKey(fileName)).ToList())
+        {
+            ViewModelMap[fileName].Release();
+            ViewModelMap.Remove(fileName);
         }
     }
 

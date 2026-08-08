@@ -16,8 +16,8 @@
 
     Title="Link a Profile"
 
-    Width="720" Height="900"
-    MinWidth="620" MinHeight="900"
+    Width="720" Height="800"
+    MinWidth="620" MinHeight="800"
 
     mc:Ignorable="d"
 

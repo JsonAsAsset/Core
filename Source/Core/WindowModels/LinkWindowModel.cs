@@ -50,18 +50,23 @@ public partial class LinkWindowModel : WindowModelBase
     {
     }
 
-    public override async Task Initialize()
+    public override Task Initialize()
     {
+        /* Not GetRecentlyUsedProfiles, which drops anything without a LastUsed and so would
+         * hide every profile that has never been loaded from the list entirely */
         Profiles = new ObservableCollection<LinkProfileItemModel>(
-            GameDetection
-                .GetRecentlyUsedProfiles(GameDetection.LoadedProfiles.Count)
+            GameDetection.LoadedProfiles
                 .Where(profile => profile != MainWM.CurrentProfile)
+                .OrderByDescending(profile => profile.Display.LastUsed ?? DateTime.MinValue)
+                .ThenBy(profile => profile.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(profile => new LinkProfileItemModel(profile)));
 
         ApplyFilter();
 
         OnPropertyChanged(nameof(HasProfiles));
         OnPropertyChanged(nameof(ActiveProfileName));
+
+        return Task.CompletedTask;
     }
 
     partial void OnSearchTextChanged(string value)

@@ -148,10 +148,29 @@ public partial class ProfileCardViewModel : ProfileViewModelBase
     private static double Lerp(double from, double to, double by) => from + (to - from) * by;
     
     /* Initializer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+    private EventHandler? clockHandler;
+
+    /* Called from both the card constructor and the view model factory, so it has to be idempotent.
+     * The clock is a static event, meaning a stray subscription outlives the card forever. */
     public override void Initialize()
     {
+        if (clockHandler is not null) return;
+
         base.Initialize();
-        
-        RelativeTimeClock.Tick += (_, _) => OnPropertyChanged(nameof(LastUsed));
+
+        clockHandler = (_, _) => OnPropertyChanged(nameof(LastUsed));
+        RelativeTimeClock.Tick += clockHandler;
+    }
+
+    /* Detaches from the clock so a replaced card generation can be collected */
+    public void Release()
+    {
+        if (clockHandler is null) return;
+
+        RelativeTimeClock.Tick -= clockHandler;
+        clockHandler = null;
+
+        hoverTimer?.Stop();
+        hoverTimer = null;
     }
 }

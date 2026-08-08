@@ -136,7 +136,7 @@ public class Profile : BaseProfileDisplay
         cancellationToken.ThrowIfCancellationRequested();
         
         await InitializeProvider();
-        LoadMappings(cancellationToken);
+        await LoadMappings(cancellationToken);
         
         cancellationToken.ThrowIfCancellationRequested();
         
@@ -323,7 +323,9 @@ public class Profile : BaseProfileDisplay
         }
     }
     
-    private async void LoadMappings(CancellationToken cancellationToken = default)
+    /* Was async void, so initialization carried on without waiting and the provider could be used
+     * before its mappings landed, with any exception in here taking the process down */
+    private async Task LoadMappings(CancellationToken cancellationToken = default)
     {
         MappingsResponse? mapping = null;
         try
@@ -430,6 +432,10 @@ public class Profile : BaseProfileDisplay
 
     public void Delete()
     {
+        /* Otherwise the profile keeps showing up anywhere LoadedProfiles is read, so it stays
+         * listed in the link window and can still be auto loaded on the next launch */
+        GameDetection.LoadedProfiles.Remove(this);
+
         if (File.Exists(SavedFilePath))
         {
             File.Delete(SavedFilePath);
