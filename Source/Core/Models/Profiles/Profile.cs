@@ -199,6 +199,15 @@ public class Profile : BaseProfileDisplay
         {
             await onDemandPlugin.InitializeStreaming(this);
         }
+
+        /* Mounts the containers holding the mips that were left out of the installation.
+         * Runs before LoadKeys on purpose, encrypted containers only mount as their key arrives. */
+        foreach (var streamingPlugin in Plugins.OfType<ITextureStreamingPlugin>())
+        {
+            UpdateStatus($"Streaming Textures ({streamingPlugin.Name})");
+
+            await streamingPlugin.StreamTextures(this);
+        }
     }
 
     public void InitializeCache(bool shouldSave = true)

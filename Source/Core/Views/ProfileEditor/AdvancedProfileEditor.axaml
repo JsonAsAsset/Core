@@ -64,6 +64,34 @@
                     </Border>
                 </StackPanel>
                 
+                <!-- Textures On Demand -->
+                <StackPanel Orientation="Vertical" Spacing="10">
+                    <Border Background="{DynamicResource ExpanderHeaderBackground}" BorderBrush="{DynamicResource ExpanderHeaderBorderBrush}" BorderThickness="1" CornerRadius="5">
+                        <Grid Margin="28">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="10">
+                                <StackPanel>
+                                    <avalonia:FluentIcon HorizontalAlignment="Left" Opacity="0.8" Icon="CloudArrowDown" FontSize="25"/>
+                                </StackPanel>
+
+                                <StackPanel Orientation="Vertical" Spacing="3">
+                                    <TextBlock Text="Stream High Resolution Textures" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Mount the on demand containers holding the mips left out of the installation" FontSize="14" Opacity="0.7" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <ToggleSwitch
+                                IsChecked="{Binding Profile.TexturesOnDemand, Mode=TwoWay, FallbackValue=''}"
+                                Cursor="Hand"
+                                Width="40"
+                                Margin="0 0 0 0"
+                                VerticalAlignment="Top"
+                                HorizontalAlignment="Right"
+                                OffContent=""
+                                OnContent=""/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
                 <StackPanel Opacity="{Binding AutoDetectedGameToOpacity}"
                             IsHitTestVisible="{Binding !Profile.IsAutoDetected}"
                             Orientation="Vertical" Spacing="15">
