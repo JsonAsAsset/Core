@@ -459,6 +459,7 @@ public class Profile : BaseProfileDisplay
             Name = Name,
             TexturePlatform = TexturePlatform,
             AudioFormat = AudioFormat,
+            TexturesOnDemand = TexturesOnDemand,
             ArchiveDirectory = ArchiveDirectory,
             MappingsContainer = MappingsContainer.Clone(),
             Encryption = Encryption.Clone(),
@@ -491,6 +492,7 @@ public class Profile : BaseProfileDisplay
         ArchiveDirectory = other.ArchiveDirectory;
         TexturePlatform = other.TexturePlatform;
         AudioFormat = other.AudioFormat;
+        TexturesOnDemand = other.TexturesOnDemand;
         MappingsContainer = other.MappingsContainer;
         Encryption = other.Encryption;
         Version = other.Version;
@@ -517,6 +519,8 @@ public class Profile : BaseProfileDisplay
            && Equals(MappingsContainer.Override, other.MappingsContainer.Override)
            && Equals(Encryption, other.Encryption)
            && Equals(TexturePlatform, other.TexturePlatform)
+           /* Decides whether the on demand containers get mounted, so it needs a reload */
+           && Equals(TexturesOnDemand, other.TexturesOnDemand)
            && Equals(Version, other.Version);
     }
     

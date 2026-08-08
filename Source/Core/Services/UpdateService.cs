@@ -43,6 +43,7 @@ public class UpdateService : IService
             if (LatestReleaseVersion is not null && CurrentVersion > LatestReleaseVersion) return;
         }
 
+        return;
         var win = new GalleryWindow
         {
             Height = 470

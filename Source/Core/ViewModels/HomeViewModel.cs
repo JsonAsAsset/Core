@@ -36,16 +36,10 @@ public class HomeViewModel : ViewModelBase
         "ㅇㅅㅇ",
         "▲",
         "thank you!",
-        "we appreciate you!"
-    ];
-    
-    public readonly string[] Tips =
-    [
-        "Hover over buttons to see if they have keybinds",
-        "Shortcuts make everything faster. Use them",
-        "Keyboard shortcuts are your best friend",
-        "This tool is community-driven — feedback matters!",
-        "Check the logs — they're full of secrets"
+        "we appreciate you!",
+        "I had to tell ya, it's now or never",
+        "So much for closure, I lost composure",
+        "I get the message, I learned my lesson"
     ];
     
     public async void StartRotation(string[] phrases, int rotateTime, TextBlock textBlock, Control? fadingControl = null!, bool useRandom = false)
