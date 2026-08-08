@@ -2,75 +2,132 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
+using Serilog;
+
 using FluentAvalonia.UI.Controls;
+
 using SharpCompress.Archives;
 using SharpCompress.Common;
+
 using Core.API.Models.GitHub.Responses;
 using Core.Extensions;
 using Core.Framework;
 using Core.WindowModels;
 using Core.Windows;
-using static System.Version;
 
 namespace Core.Services;
 
 public class UpdateService : IService
 {
-    private Version CurrentVersion = null!;
-    private Version LastSavedVersion = null!;
+    private Version? CurrentVersion;
+    private Version? LastSavedVersion;
 
-    private GitHubReleaseResponse LatestRelease = null!;
-    private Version LatestReleaseVersion = null!;
-    private bool ShowAllModels = false;
+    private GitHubReleaseResponse? LatestRelease;
+    private Version? LatestReleaseVersion;
+    private bool ShowAllModels = true;
 
     private void ShowModel()
     {
         if (!ShowAllModels)
         {
+            if (CurrentVersion is null) return;
+
             if (CurrentVersion <= LastSavedVersion
                 && Settings.Application.Version != string.Empty) return;
-        
-            if (CurrentVersion > LatestReleaseVersion) return;
+
+            /* Only suppress once the latest release is actually known, or an offline launch
+             * would hide this permanently */
         }
-        
+
         var win = new GalleryWindow
         {
-            Height = 678
+            Height = 470
         };
 
         win.CenterToScreen(MainWM.Window);
         win.Show();
-        
-        win.WM.Title = "Link Editor Only Profile";
+
+        win.WM.Title = "What's New";
         win.WM.Tag = true;
         win.WM.TagType = TagType.New;
         win.WM.SecondaryButtonEnabled = false;
-        win.WM.Description = "Link two builds together so your main build can stay stripped of editor-only data while a linked profile provides the editor data it needs, such as materials and material functions.";
+        win.WM.Description =
+            "Fortnite's high resolution textures now load at full size. They stream in as you need them, instead of falling back to the smaller copy that ships with the game.\n\n" +
+            "Vector fields, volume textures and cubemaps are supported.\n\n" +
+            "You can also search your profiles now, and sort them by version or by when you last used them.";
+    }
+
+    /* GitHub release names are free text, and System.Version only accepts two to four numeric
+     * components and throws on anything else. Take the leading numeric run so "v1.5.2",
+     * "1.5.2 Hotfix" and "1.5.1.4.2" all resolve instead of taking the update check down. */
+    private static bool TryParseVersion(string? value, out Version? version)
+    {
+        version = null;
+
+        if (string.IsNullOrWhiteSpace(value)) return false;
+
+        var text = value.Trim().TrimStart('v', 'V');
+
+        var match = Regex.Match(text, @"^\d+(\.\d+)*");
+        if (!match.Success) return false;
+
+        var parts = match.Value.Split('.');
+
+        var normalized = parts.Length switch
+        {
+            1 => $"{parts[0]}.0",
+            > 4 => string.Join('.', parts.Take(4)),
+            _ => match.Value
+        };
+
+        return Version.TryParse(normalized, out version);
     }
 
     private async Task UpdateVersioning()
     {
-        TryParse(VERSION, out CurrentVersion!);
-        TryParse(Settings.Application.Version, out LastSavedVersion!);
-        
-        LatestRelease = (await RestAPI.GitHub.GetLatestRelease())!;
-        if (LatestRelease is not null)
+        if (!TryParseVersion(VERSION, out CurrentVersion))
         {
-            LatestReleaseVersion = new Version(LatestRelease.Name);
+            Log.Warning("Could not parse the running version '{Version}'", VERSION);
+        }
+
+        TryParseVersion(Settings.Application.Version, out LastSavedVersion);
+
+        LatestRelease = await RestAPI.GitHub.GetLatestRelease();
+
+        if (LatestRelease is not null && !TryParseVersion(LatestRelease.Name, out LatestReleaseVersion))
+        {
+            Log.Warning("Could not parse the latest release name '{Name}'", LatestRelease.Name);
         }
     }
     
     public async void Initialize()
     {
         if (MainWM.Window == null) return;
-        
+
+        try
+        {
+            await RunUpdateCheck();
+        }
+        catch (Exception ex)
+        {
+            /* async void, so anything escaping here surfaces as an unhandled dispatcher
+             * exception and abandons the rest of the check */
+            Log.Warning(ex, "Update check failed");
+        }
+    }
+
+    private async Task RunUpdateCheck()
+    {
         await UpdateVersioning();
-        
-        if (CurrentVersion < LatestReleaseVersion && CurrentVersion != null
-            && LatestRelease is not null
-            || ShowAllModels)
+
+        var isOutdated = CurrentVersion is not null
+                         && LatestReleaseVersion is not null
+                         && CurrentVersion < LatestReleaseVersion;
+
+        if (LatestRelease is not null && (isOutdated || ShowAllModels))
         {
             var win = new GalleryWindow
             {
@@ -97,11 +154,14 @@ public class UpdateService : IService
         
         ShowModel();
 
-        if (LatestReleaseVersion != null && CurrentVersion != null || ShowAllModels)
+        if (CurrentVersion is null) return;
+
+        var isDevelopmental = LatestReleaseVersion is not null
+                              && CurrentVersion > LatestReleaseVersion
+                              && Settings.Application.Version != CurrentVersion.ToString();
+
+        if (isDevelopmental || ShowAllModels)
         {
-            if (CurrentVersion > LatestReleaseVersion
-                && Settings.Application.Version != CurrentVersion.ToString() || ShowAllModels)
-            {
 #if !DEBUG
                 var win = new GalleryWindow();
 
@@ -115,10 +175,9 @@ public class UpdateService : IService
                 win.WM.SecondaryButtonText = "Got it";
                 win.WM.Description = $"You are running a developmental build of {APP_NAME}.\n\nThis issued version may be unstable.";
 #endif
-            }
-            
-            Settings.Application.Version = CurrentVersion.ToString();
         }
+
+        Settings.Application.Version = CurrentVersion.ToString();
     }
 
     private static async Task DownloadAndInstall(string versionName, string downloadUrl)

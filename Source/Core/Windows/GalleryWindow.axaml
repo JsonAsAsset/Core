@@ -47,28 +47,19 @@
                 </Border.Effect>
             </Border>
             
-            <Grid VerticalAlignment="Top" RowDefinitions="Auto,*">
-                <Grid Height="381" Width="800" IsHitTestVisible="False">
-                    <Image HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                           IsVisible="{Binding IsNew}"
-                           Source="/Assets/Thumbnails/0.0.5.2.png">
-                        <Image.OpacityMask>
-                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                                <GradientStop Color="#FF000000" Offset="0.8" />
-                                <GradientStop Color="#00000000" Offset="1" />
-                            </LinearGradientBrush>
-                        </Image.OpacityMask>
-                    </Image>
-                </Grid>
-
-                <StackPanel Grid.Row="1" Margin="32 0 32 100" Spacing="20" VerticalAlignment="Bottom">
+            <!-- Stretch, not Top. Sized to its content this grew past the window bottom and ran
+                 the text under the action buttons once the description got longer. -->
+            <Grid VerticalAlignment="Stretch">
+                <StackPanel Margin="32 0 32 100" Spacing="20" VerticalAlignment="Bottom">
                     <Border IsVisible="{Binding Tag}" Background="{Binding TagBackground}" CornerRadius="10" HorizontalAlignment="Left" Padding="10">
                         <TextBlock Name="TagText" Text="{Binding TagText}" FontSize="15" Foreground="{Binding TagForeground}"/>
                     </Border>
 
                     <TextBlock Name="Title" Text="{Binding Title}" FontSize="37" FontWeight="Bold"/>
 
-                    <TextBlock Name="Description" Text="{Binding Description}" TextWrapping="Wrap" LineHeight="25" MaxHeight="95" TextTrimming="CharacterEllipsis" Foreground="#969696" FontSize="20"/>
+                    <!-- Cap is generous so a multi paragraph change list isn't cut off, the short
+                         descriptions on the update and developmental windows are unaffected -->
+                    <TextBlock Name="Description" Text="{Binding Description}" TextWrapping="Wrap" LineHeight="25" MaxHeight="230" TextTrimming="CharacterEllipsis" Foreground="#969696" FontSize="20"/>
                 </StackPanel>
             </Grid>
 
