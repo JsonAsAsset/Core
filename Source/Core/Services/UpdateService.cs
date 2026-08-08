@@ -40,6 +40,7 @@ public class UpdateService : IService
 
             /* Only suppress once the latest release is actually known, or an offline launch
              * would hide this permanently */
+            if (LatestReleaseVersion is not null && CurrentVersion > LatestReleaseVersion) return;
         }
 
         var win = new GalleryWindow
