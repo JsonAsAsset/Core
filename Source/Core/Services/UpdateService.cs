@@ -27,7 +27,7 @@ public class UpdateService : IService
 
     private GitHubReleaseResponse? LatestRelease;
     private Version? LatestReleaseVersion;
-    private bool ShowAllModels = true;
+    private bool ShowAllModels = false;
 
     private void ShowModel()
     {
