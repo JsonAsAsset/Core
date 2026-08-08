@@ -6,7 +6,8 @@
     xmlns:windowModels="clr-namespace:Core.WindowModels"
     xmlns:window="clr-namespace:Core.Controls.Window"
     xmlns:controls="clr-namespace:Core.Controls"
-    xmlns:avalonia="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    xmlns:fluentControls="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+    xmlns:avalonia="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
     xmlns:profiles="clr-namespace:Core.Controls.Profiles"
     x:Name="Root"
 
@@ -14,201 +15,338 @@
     x:DataType="windowModels:LinkWindowModel"
 
     Title="Link a Profile"
-    
-    Width="860" Height="700"
-    MinWidth="860" MinHeight="700"
-    
+
+    Width="720" Height="900"
+    MinWidth="620" MinHeight="900"
+
     mc:Ignorable="d"
-    
-    d:DesignWidth="500"
-    d:DesignHeight="400">
-    
+
+    d:DesignWidth="720"
+    d:DesignHeight="660">
+
+    <Window.Styles>
+        <!-- Row card. The button stays invisible so the border owns every visual state. -->
+        <Style Selector="Button.ProfileRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style Selector="Button.ProfileRow /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Button.ProfileRow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Button.ProfileRow:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Border.RowCard">
+            <Setter Property="Background" Value="{DynamicResource ProfileCardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ProfileCardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Button.ProfileRow:pointerover Border.RowCard">
+            <Setter Property="Background" Value="#D91A1B1D"/>
+            <Setter Property="BorderBrush" Value="#33373A"/>
+        </Style>
+
+        <!-- Selected wins over hover, so it comes last -->
+        <Style Selector="Border.RowCard.Selected">
+            <Setter Property="Background" Value="#1A1E2B"/>
+            <Setter Property="BorderBrush" Value="#1f66ff"/>
+        </Style>
+
+        <Style Selector="Button.ProfileRow:pointerover Border.RowCard.Selected">
+            <Setter Property="Background" Value="#1F2436"/>
+            <Setter Property="BorderBrush" Value="#4a86ff"/>
+        </Style>
+
+        <!-- Selection badge, an outlined ring that fills in once picked -->
+        <Style Selector="Border.SelectionBadge">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#3d3d3d"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.SelectionBadge.Selected">
+            <Setter Property="Background" Value="#1f66ff"/>
+            <Setter Property="BorderBrush" Value="#1f66ff"/>
+        </Style>
+
+        <Style Selector="Border.SelectionBadge avalonia|FluentIcon">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.15"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.SelectionBadge.Selected avalonia|FluentIcon">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+    </Window.Styles>
+
     <Grid Margin="{Binding $parent[Window].OffScreenMargin}">
-        <Grid RowDefinitions="Auto,Auto,*,Auto">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
             <Grid Height="{DynamicResource TitleBarHeight}" Grid.Row="0" IsHitTestVisible="False"/>
 
             <!-- Navigation -->
             <Grid Grid.Row="1" Background="{DynamicResource BackgroundBrush}">
-                <window:BaseTitleBar VerticalAlignment="Top" Height="{DynamicResource TitleBarHeight}" Margin="{DynamicResource TitleBarNegativeTopMargin}">
-                    <window:BaseTitleBar.LeftItems>
-                        <Border IsHitTestVisible="False" MaxWidth="300" HorizontalAlignment="Center">
-                            <TextBlock Text="Link a Profile"
-                                       TextTrimming="CharacterEllipsis"
-                                       TextWrapping="NoWrap"
-                                       IsHitTestVisible="False"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       FontSize="15"/>
-                        </Border>
-                    </window:BaseTitleBar.LeftItems>
-
-                    <window:BaseTitleBar.RightContent>
-                    </window:BaseTitleBar.RightContent>
-                </window:BaseTitleBar>
+                <!-- No title text here, the header below already carries it -->
+                <window:BaseTitleBar VerticalAlignment="Top" Height="{DynamicResource TitleBarHeight}" Margin="{DynamicResource TitleBarNegativeTopMargin}"/>
             </Grid>
-            
-            <ScrollViewer Grid.Row="2"
-                          Margin="32 0 32 0"
-                          VerticalAlignment="Stretch"
-                          HorizontalAlignment="Stretch"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding Profiles}"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Stretch">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Margin="0 15 0 20"
-                                        Orientation="Vertical"
-                                        Spacing="0"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
 
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Classes="SoftHoverLift"
-                                    HorizontalAlignment="Stretch"
-                                    Padding="10"
-                                    Background="{Binding Background}"
-                                    Command="{Binding #Root.DataContext.SelectProfileCommand}"
-                                    CommandParameter="{Binding}">
-                                <Grid>
-                                    <profiles:ProfileSplashControl HorizontalAlignment="Left"
-                                           Radius="10"
-                                           SplashScale="2"
-                                           DataContext="{Binding Profile}"/>
+            <!-- Header -->
+            <!-- No top margin, the 82px title bar band already leaves a gap under the icon -->
+            <StackPanel Grid.Row="2" Margin="32 0 32 16" Spacing="14">
+                <StackPanel Spacing="7">
+                    <TextBlock Text="Link a Profile" FontSize="27" FontWeight="Bold"/>
 
-                                    <StackPanel Margin="85 0 0 0"
-                                                VerticalAlignment="Center"
-                                                Spacing="3">
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontSize="18"
-                                                   Opacity="0.94"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="White"/>
-                                    </StackPanel>
+                    <TextBlock FontSize="14"
+                               LineHeight="20"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource ProfileCardLastUsedForeground}"><Run Text="Loads a second profile alongside "/><Run Text="{Binding ActiveProfileName, Mode=OneWay}" FontWeight="SemiBold" Foreground="White"/><Run Text=". Assets that are missing from it are resolved from the profile you link here."/></TextBlock>
+                </StackPanel>
 
-                                    <Border Height="40" Width="40" Opacity="{Binding IsSelected}" CornerRadius="5" HorizontalAlignment="Right" Padding="5">
-                                        <avalonia:MaterialIcon Kind="Link" FontSize="25" Foreground="White"/>
+                <!-- Search -->
+                <Grid IsVisible="{Binding HasProfiles}">
+                    <TextBox Text="{Binding SearchText, Mode=TwoWay}"
+                             Watermark="Search profiles"
+                             CornerRadius="8"
+                             Height="38"
+                             Padding="38 0 8 0"
+                             VerticalContentAlignment="Center"/>
+
+                    <avalonia:FluentIcon Icon="Search"
+                                         FontSize="18"
+                                         Opacity="0.45"
+                                         Margin="12 0 0 0"
+                                         HorizontalAlignment="Left"
+                                         VerticalAlignment="Center"
+                                         IsHitTestVisible="False"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Profiles -->
+            <Grid Grid.Row="3">
+                <ScrollViewer Margin="32 0 32 0"
+                              IsVisible="{Binding HasResults}"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Profiles}" HorizontalAlignment="Stretch">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <!-- Gap lives on the rows, not as Spacing, so hidden rows leave none.
+                                     Bottom margin keeps the last row out of the opaque end of the fade. -->
+                                <StackPanel Margin="0 0 0 10" Orientation="Vertical"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="windowModels:LinkProfileItemModel">
+                                <Button Classes="ProfileRow SoftHoverLift"
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0 0 0 8"
+                                        IsVisible="{Binding IsMatch}"
+                                        Command="{Binding #Root.DataContext.SelectProfileCommand}"
+                                        CommandParameter="{Binding}">
+                                    <Border Classes="RowCard"
+                                            Classes.Selected="{Binding IsSelected}"
+                                            Padding="14 12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                                            <profiles:ProfileSplashControl Grid.Column="0"
+                                                                          Radius="14"
+                                                                          SplashScale="1.7"
+                                                                          VerticalAlignment="Center"
+                                                                          DataContext="{Binding Profile}"/>
+
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                                                <!-- Name and badges on the left, last used pinned right so the
+                                                     row reads across its full width instead of trailing off -->
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   FontSize="17"
+                                                                   FontWeight="SemiBold"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   VerticalAlignment="Center"/>
+
+                                                        <Border IsVisible="{Binding IsAutoDetected}"
+                                                                ToolTip.Tip="Auto-detected"
+                                                                Width="20"
+                                                                Height="20"
+                                                                Padding="3"
+                                                                Background="#0095ff"
+                                                                CornerRadius="7"
+                                                                VerticalAlignment="Center">
+                                                            <avalonia:FluentIcon Icon="Communication" FontSize="16"/>
+                                                        </Border>
+
+                                                        <avalonia:FluentIcon IsVisible="{Binding HasValidationErrors}"
+                                                                             Icon="Warning"
+                                                                             FontSize="17"
+                                                                             Foreground="#ff4f64"
+                                                                             VerticalAlignment="Center"
+                                                                             ToolTip.Tip="Profile has errors"/>
+                                                    </StackPanel>
+
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding LastUsed}"
+                                                               FontSize="12"
+                                                               VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource ProfileCardLastUsedForeground}"/>
+                                                </Grid>
+
+                                                <!-- Directory -->
+                                                <Grid ColumnDefinitions="Auto,*" Opacity="0.5">
+                                                    <fluentControls:SymbolIcon Grid.Column="0"
+                                                                               Symbol="Folder"
+                                                                               FontSize="16"
+                                                                               VerticalAlignment="Center"/>
+
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding ArchiveDirectory}"
+                                                               FontSize="12"
+                                                               Margin="6 0 0 0"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </StackPanel>
+
+                                            <Border Grid.Column="2"
+                                                    Classes="SelectionBadge"
+                                                    Classes.Selected="{Binding IsSelected}"
+                                                    Width="28"
+                                                    Height="28"
+                                                    CornerRadius="14"
+                                                    VerticalAlignment="Center">
+                                                <avalonia:FluentIcon Icon="Checkmark"
+                                                                     FontSize="17"
+                                                                     Foreground="White"
+                                                                     HorizontalAlignment="Center"
+                                                                     VerticalAlignment="Center"/>
+                                            </Border>
+                                        </Grid>
                                     </Border>
-                                </Grid>
-                            </Button>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Nothing to show -->
+                <StackPanel IsVisible="{Binding !HasResults}"
+                            Margin="48 0"
+                            Spacing="12"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <avalonia:FluentIcon Icon="Link"
+                                         FontSize="42"
+                                         Opacity="0.25"
+                                         HorizontalAlignment="Center"/>
+
+                    <TextBlock Text="Nothing to link"
+                               FontSize="17"
+                               FontWeight="SemiBold"
+                               Opacity="0.85"
+                               HorizontalAlignment="Center"/>
+
+                    <TextBlock IsVisible="{Binding !IsSearching}"
+                               Text="Every profile you have is either already loaded or the active one. Create another profile to link it here."
+                               FontSize="13"
+                               MaxWidth="380"
+                               LineHeight="19"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource ProfileCardLastUsedForeground}"/>
+
+                    <TextBlock IsVisible="{Binding IsSearching}"
+                               Text="No profile matches your search."
+                               FontSize="13"
+                               TextAlignment="Center"
+                               Foreground="{DynamicResource ProfileCardLastUsedForeground}"/>
+                </StackPanel>
+
+                <!-- The list dissolves into the action bar rather than being cut off by a rule -->
+                <Border Height="34"
+                        VerticalAlignment="Bottom"
+                        IsHitTestVisible="False"
+                        IsVisible="{Binding HasResults}">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                            <GradientStop Color="#00000000" Offset="0"/>
+                            <GradientStop Color="#B3000000" Offset="0.55"/>
+                            <GradientStop Color="#FF000000" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                </Border>
+            </Grid>
 
             <!-- Action Bar -->
-            <Grid Grid.Row="3" Background="{DynamicResource BackgroundBrush}">
-                <Grid>
-                    <controls:CursorEffectControl ClipToBounds="False"/>
-                    
-                    <StackPanel Orientation="Horizontal"
-                                Height="60"
-                                Margin="25 0 0 5"
-                                HorizontalAlignment="Left"
-                                Spacing="10"
-                                VerticalAlignment="Bottom">
-                    </StackPanel>
-                    
-                    <UniformGrid HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Rows="1" ColumnSpacing="10" Margin="32 0 32 32">
-                        <Button Content="Dismiss"
-                                Classes="ContentSecondary SoftHoverLift"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                CornerRadius="5"
-                                Click="Close"
-                                HorizontalContentAlignment="Center"
-                                VerticalContentAlignment="Center"/>
-                
-                        <Button Content="Link"
-                                Classes="ContentPrimary SoftHoverLift"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                CornerRadius="5"
-                                Click="PrimaryButtonClick"
-                                HorizontalContentAlignment="Center"
-                                VerticalContentAlignment="Center"/>
-                    </UniformGrid>
-                </Grid>
+            <Grid Grid.Row="4" Background="{DynamicResource BackgroundBrush}">
+                <controls:CursorEffectControl ClipToBounds="False"/>
+
+                <UniformGrid HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Rows="1" ColumnSpacing="10" Margin="32 24 32 24">
+                    <Button Content="Dismiss"
+                            Classes="ContentSecondary SoftHoverLift"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Height="44"
+                            IsEnabled="{Binding !IsLinking}"
+                            CornerRadius="5"
+                            Click="Close"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"/>
+
+                    <Button Classes="ContentPrimary SoftHoverLift"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"
+                            Height="44"
+                            IsDefault="True"
+                            IsEnabled="{Binding CanLink}"
+                            CornerRadius="5"
+                            Click="PrimaryButtonClick"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <fluentControls:ProgressRing IsVisible="{Binding IsLinking}"
+                                                         Width="16"
+                                                         Height="16"
+                                                         VerticalAlignment="Center"/>
+
+                            <avalonia:FluentIcon IsVisible="{Binding !IsLinking}"
+                                                 Icon="Link"
+                                                 FontSize="18"
+                                                 VerticalAlignment="Center"/>
+
+                            <TextBlock Text="{Binding PrimaryButtonText}"
+                                       FontWeight="Medium"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </UniformGrid>
             </Grid>
         </Grid>
     </Grid>
-    
-    <!--
-    <Grid Margin="{Binding $parent[Window].OffScreenMargin}">
-        <Grid>
-            <ScrollViewer Margin="32 0 32 70"
-                          VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Profiles}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Margin="0 15 30 20" Orientation="Vertical" Spacing="10"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Classes="SoftHoverLift"
-                                    HorizontalAlignment="Stretch"
-                                    Padding="10"
-                                    Background="{Binding Background}"
-                                    HorizontalContentAlignment="Left"
-                                    Command="{Binding #Root.DataContext.SelectProfileCommand}"
-                                    CommandParameter="{Binding}">
-                                <Grid HorizontalAlignment="Left" ColumnDefinitions="72,*,Auto" ColumnSpacing="10">
-                                    <profiles:ProfileSplashControl Grid.Column="0"
-                                                                   ZIndex="1"
-                                                                   Radius="15"
-                                                                   SplashScale="2"
-                                                                   DataContext="{Binding Profile}"/>
-
-                                    <StackPanel Grid.Column="1"
-                                                VerticalAlignment="Center"
-                                                Spacing="3">
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontSize="18"
-                                                   Opacity="0.94"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="White"/>
-                                    </StackPanel>
-
-                                    <Border Height="25" Opacity="{Binding IsSelected}" Grid.Column="2" Background="White" CornerRadius="5" HorizontalAlignment="Left" Padding="5">
-                                        <avalonia:MaterialIcon Kind="Link" Foreground="Black"/>
-                                    </Border>
-                                </Grid>
-                            </Button>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-            
-            <UniformGrid HorizontalAlignment="Stretch" VerticalAlignment="Bottom" Rows="1" ColumnSpacing="10" Margin="32">
-                <Button Content="Dismiss"
-                        Classes="ContentSecondary SoftHoverLift"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        CornerRadius="5"
-                        Click="Close"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"/>
-                
-                <Button Content="Link"
-                        Classes="ContentPrimary SoftHoverLift"
-                        HorizontalAlignment="Stretch"
-                        VerticalAlignment="Stretch"
-                        CornerRadius="5"
-                        Click="PrimaryButtonClick"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"/>
-            </UniformGrid>
-
-            <Grid HorizontalAlignment="Right" VerticalAlignment="Top">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
-                    <CaptionButtons Name="captionButtons"/>
-                </StackPanel>
-            </Grid>
-        </Grid>
-    </Grid>-->
 </Window>

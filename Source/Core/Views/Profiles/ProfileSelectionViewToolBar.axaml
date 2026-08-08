@@ -16,7 +16,7 @@
     Focusable="True"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch">
-    
+
     <StackPanel Orientation="Horizontal" Spacing="10" ClipToBounds="False">
         <Button Cursor="Hand" Width="55" Classes="HoverLift" BorderThickness="0" Command="{x:Static profiles:Profile.CreateNewProfileCommand}" Height="35" Background="#0095ff" Opacity="1" CornerRadius="7" IsVisible="True">
             <ToolTip.Tip>
@@ -25,7 +25,7 @@
                     <controls:KeybindDisplay Keybind="Ctrl+" />
                 </StackPanel>
             </ToolTip.Tip>
-            
+
             <Button.Resources>
                 <ResourceDictionary>
                     <SolidColorBrush x:Key="ButtonBackgroundPointerOver">#2ea8ff</SolidColorBrush>
@@ -34,7 +34,7 @@
                     <SolidColorBrush x:Key="ButtonForegroundPressed">White</SolidColorBrush>
                 </ResourceDictionary>
             </Button.Resources>
-                
+
             <avalonia:FluentIcon FontSize="23" Icon="PersonAdd"/>
         </Button>
     </StackPanel>

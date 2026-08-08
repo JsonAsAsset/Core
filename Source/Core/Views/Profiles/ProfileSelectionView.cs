@@ -3,6 +3,7 @@ using System.Linq;
 
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.VisualTree;
 
@@ -30,6 +31,7 @@ public partial class ProfileSelectionView : ViewBase<ProfileSelectionViewModel>
         ViewModel.ProfileListPanel = ProfileListPanel;
         ViewModel.WrapCard = WrapCard;
         ViewModel.HookEvents = HookEvents;
+        ViewModel.OnLayoutChanged = UpdateCardWidths;
     
         ProfileListPanel.SizeChanged += (_, _) => UpdateCardWidths();
 
@@ -44,6 +46,8 @@ public partial class ProfileSelectionView : ViewBase<ProfileSelectionViewModel>
         });
     }
     
+    private void ClearSearch(object? sender, RoutedEventArgs e) => ViewModel.ClearSearch();
+
     private void UpdateCardWidths()
     {
         if (ProfileListPanel?.Bounds.Width <= 0) return;
@@ -135,18 +139,13 @@ public partial class ProfileSelectionView : ViewBase<ProfileSelectionViewModel>
                 PrimaryButtonText = "Delete",
                 PrimaryButtonCommand = new RelayCommand(() =>
                 {
-                    if (profile.FileName is not null && ViewModel.CardMap.TryGetValue(profile.FileName, out var cardToRemove))
+                    if (profile.FileName is not null)
                     {
-                        var border = ProfileListPanel!.Children.OfType<Border>().FirstOrDefault(c => c.Child == cardToRemove);
-                        if (border is not null)
-                        {
-                            ProfileListPanel.Children.Remove(border);
-                        }
-                
                         ViewModel.CardMap.Remove(profile.FileName);
                     }
-            
-                    ViewModel.IsEmpty = ViewModel.CardMap.Count == 0;
+
+                    /* Drops the card and refreshes the empty states in one pass */
+                    ViewModel.ApplyView();
 
                     if (viewModel.CurrentProfile is not null && viewModel.CurrentProfile == profile)
                     {

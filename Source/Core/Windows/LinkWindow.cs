@@ -38,12 +38,22 @@ public partial class LinkWindow : WindowBase<LinkWindowModel>
     {
         var profile = WM.SelectedProfile?.Profile;
 
-        if (profile is null)
+        if (profile is null || WM.IsLinking)
         {
             return;
         }
 
-        await profile.Initialize();
+        WM.IsLinking = true;
+
+        try
+        {
+            await profile.Initialize();
+        }
+        finally
+        {
+            WM.IsLinking = false;
+        }
+
         profile.Display.LastUsed = DateTime.Now;
 
         profile.Status.SetState(EProfileStatus.Active);

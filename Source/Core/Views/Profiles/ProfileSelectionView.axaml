@@ -5,8 +5,10 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:controls="clr-namespace:Core.Controls"
+    xmlns:avalonia="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
     xmlns:profiles="clr-namespace:Core.ViewModels.Profiles"
     xmlns:profiles1="clr-namespace:Core.Models.Profiles"
+    xmlns:enums="clr-namespace:Core.Models.Enums"
     mc:Ignorable="d"
     d:DesignWidth="1320"
     d:DesignHeight="770"
@@ -15,17 +17,217 @@
     Background="Transparent"
     HorizontalAlignment="Stretch"
     VerticalAlignment="Stretch">
-    
+
     <UserControl.KeyBindings>
         <KeyBinding Gesture="Ctrl++" Command="{x:Static profiles1:Profile.CreateNewProfileCommand}" />
     </UserControl.KeyBindings>
 
-    <Grid Margin="0 0 10 0">
-        <ScrollViewer x:Name="ProfileScrollViewer" controls:ScrollTopShadow.Enable="True" IsScrollChainingEnabled="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
-            <WrapPanel ClipToBounds="False" x:Name="ProfileListPanel" LineSpacing="-20" Margin="-2 -9 5 -4" Orientation="Horizontal"/>
-        </ScrollViewer>
-        
-        <Grid IsVisible="{Binding IsEmpty}">
+    <UserControl.Styles>
+        <!-- Same surface as the cards so the bar belongs to them rather than floating above -->
+        <Style Selector="Border.ControlBar">
+            <Setter Property="Background" Value="{DynamicResource ProfileCardBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ProfileCardBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.18"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.ControlBar:focus-within">
+            <Setter Property="BorderBrush" Value="#1f66ff"/>
+        </Style>
+
+        <Style Selector="Border.ControlBar avalonia|FluentIcon#SearchIcon">
+            <Setter Property="Opacity" Value="0.4"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.18"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.ControlBar:focus-within avalonia|FluentIcon#SearchIcon">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="Foreground" Value="#1f66ff"/>
+        </Style>
+
+        <!-- The field is part of the bar, so it draws no box of its own -->
+        <Style Selector="TextBox.Bare">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Button.BarAction">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="9"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Button.SortOption">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <!-- Stretch, or the row collapses to its text and the checkmark clings to the label -->
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="Padding" Value="10 0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid Margin="0 0 10 0" RowDefinitions="Auto,*">
+        <!-- Pinned above the scroll area so it stays put as the list moves -->
+        <Border Grid.Row="0"
+                Classes="ControlBar"
+                IsVisible="{Binding !IsEmpty}"
+                Height="52"
+                ClipToBounds="True"
+                Margin="14 0 5 14">
+            <!-- Transparent fill so the whole bar is hit-testable and the cursor glow tracks across it -->
+            <Grid Background="Transparent">
+                <controls:CursorEffectControl ClipToBounds="False"/>
+
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" Margin="16 0 8 0">
+                    <avalonia:FluentIcon Grid.Column="0"
+                                         x:Name="SearchIcon"
+                                         Icon="Search"
+                                         FontSize="19"
+                                         VerticalAlignment="Center"
+                                         IsHitTestVisible="False"/>
+
+                    <TextBox Grid.Column="1"
+                             Classes="Bare"
+                             Text="{Binding SearchText, Mode=TwoWay}"
+                             Watermark="Search profiles"
+                             FontSize="14"
+                             Margin="11 0 0 0">
+                        <TextBox.Resources>
+                            <ResourceDictionary>
+                                <SolidColorBrush x:Key="TextControlBackground" Color="Transparent"/>
+                                <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent"/>
+                                <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent"/>
+                                <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent"/>
+                                <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent"/>
+                                <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent"/>
+                            </ResourceDictionary>
+                        </TextBox.Resources>
+                    </TextBox>
+
+                    <Button Grid.Column="2"
+                            Classes="BarAction"
+                            Width="28"
+                            Height="28"
+                            IsVisible="{Binding IsSearching}"
+                            Click="ClearSearch"
+                            ToolTip.Tip="Clear search">
+                        <avalonia:FluentIcon Icon="Dismiss" FontSize="15"/>
+                    </Button>
+
+                    <TextBlock Grid.Column="3"
+                               Text="{Binding CountLabel}"
+                               FontSize="13"
+                               Margin="14 0 0 0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource ProfileCardLastUsedForeground}"/>
+
+                    <Border Grid.Column="4"
+                            Width="1"
+                            Height="22"
+                            Margin="14 0"
+                            Background="{DynamicResource ProfileCardBorder}"/>
+
+                    <Button Grid.Column="5"
+                            Classes="BarAction"
+                            Height="36"
+                            Padding="11 0"
+                            ToolTip.Tip="Change how profiles are ordered">
+                <Button.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedRight">
+                        <StackPanel Width="210" Spacing="2">
+                            <Button Classes="SortOption SoftHoverLift"
+                                    Command="{Binding SetSortModeCommand}"
+                                    CommandParameter="{x:Static enums:EProfileSortMode.VersionName}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <avalonia:FluentIcon Grid.Column="0"
+                                                         Icon="TextNumberFormat"
+                                                         FontSize="18"
+                                                         VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="Version / name"
+                                               FontSize="15"
+                                               Margin="12 0 0 0"
+                                               Foreground="White"
+                                               VerticalAlignment="Center"/>
+
+                                    <avalonia:FluentIcon Grid.Column="2"
+                                                         Icon="Checkmark"
+                                                         FontSize="18"
+                                                         VerticalAlignment="Center"
+                                                         IsVisible="{Binding IsSortByVersionName}"/>
+                                </Grid>
+                            </Button>
+
+                            <Button Classes="SortOption SoftHoverLift"
+                                    Command="{Binding SetSortModeCommand}"
+                                    CommandParameter="{x:Static enums:EProfileSortMode.LastUsed}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <avalonia:FluentIcon Grid.Column="0"
+                                                         Icon="History"
+                                                         FontSize="18"
+                                                         VerticalAlignment="Center"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="Last used"
+                                               FontSize="15"
+                                               Margin="12 0 0 0"
+                                               Foreground="White"
+                                               VerticalAlignment="Center"/>
+
+                                    <avalonia:FluentIcon Grid.Column="2"
+                                                         Icon="Checkmark"
+                                                         FontSize="18"
+                                                         VerticalAlignment="Center"
+                                                         IsVisible="{Binding IsSortByLastUsed}"/>
+                                </Grid>
+                            </Button>
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <avalonia:FluentIcon Icon="ArrowSort" FontSize="18" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding SortModeLabel}" FontSize="14" VerticalAlignment="Center"/>
+                            <avalonia:FluentIcon Icon="ChevronDown" FontSize="13" Opacity="0.5" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1">
+            <ScrollViewer x:Name="ProfileScrollViewer" controls:ScrollTopShadow.Enable="True" IsScrollChainingEnabled="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalContentAlignment="Stretch">
+                <WrapPanel ClipToBounds="False" x:Name="ProfileListPanel" LineSpacing="-20" Margin="-2 -9 5 -4" Orientation="Horizontal"/>
+            </ScrollViewer>
+
+            <!-- Search hid everything, distinct from having no profiles at all -->
+            <TextBlock IsVisible="{Binding HasNoMatches}"
+                       Text="No profiles match your search"
+                       FontSize="22"
+                       Opacity="0.8"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Grid>
+
+        <Grid Grid.Row="0" Grid.RowSpan="2" IsVisible="{Binding IsEmpty}">
             <!-- Background blur effect -->
             <Border Height="35" Margin="200 0 200 0"
                     HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
@@ -38,12 +240,12 @@
                     <BlurEffect Radius="450"/>
                 </Border.Effect>
             </Border>
-            
+
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="50">
                 <Grid>
                     <Image Height="300" HorizontalAlignment="Center" Source="/Assets/Icon/App.Icon.png" Margin="0 0 0 25"/>
                 </Grid>
-            
+
                 <TextBlock FontSize="35" Opacity="0.8" HorizontalAlignment="Center" VerticalAlignment="Center">
                     This space will grow as you add new profiles
                 </TextBlock>

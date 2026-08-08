@@ -8,10 +8,13 @@ using Avalonia.Controls;
 using Avalonia.Threading;
 
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 using Core.Framework.Models;
 using Core.Models;
+using Core.Models.Enums;
 using Core.Models.Profiles;
+using Core.Resources.Extensions;
 using Core.Services.Framework;
 using Core.Views.Profiles;
 
@@ -22,12 +25,55 @@ public partial class ProfileSelectionViewModel : ViewModelBase
     public Dictionary<string, ProfileCard> CardMap { get; } = new();
     private Dictionary<string, ProfileCardViewModel> ViewModelMap { get; } = new();
 
+    /* A card keeps its wrapper as logical parent even while filtered out of the panel,
+     * so wrappers have to be remembered here rather than read back off the panel */
+    private readonly Dictionary<ProfileCard, Border> WrapperMap = new();
+
     [ObservableProperty] private bool isEmpty;
-    
+
+    /* Set when there are profiles but the search hides all of them */
+    [ObservableProperty] private bool hasNoMatches;
+
+    [ObservableProperty] private string searchText = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SortModeLabel))]
+    [NotifyPropertyChangedFor(nameof(IsSortByVersionName))]
+    [NotifyPropertyChangedFor(nameof(IsSortByLastUsed))]
+    private EProfileSortMode sortMode = EProfileSortMode.VersionName;
+
+    public string SortModeLabel => SortMode.GetDescription();
+    public bool IsSortByVersionName => SortMode == EProfileSortMode.VersionName;
+    public bool IsSortByLastUsed => SortMode == EProfileSortMode.LastUsed;
+
+    public bool IsSearching => !string.IsNullOrWhiteSpace(SearchText);
+
+    private int visibleCount;
+
+    public string CountLabel => IsSearching
+        ? $"{visibleCount} of {CardMap.Count}"
+        : CardMap.Count == 1 ? "1 profile" : $"{CardMap.Count} profiles";
+
+    partial void OnSearchTextChanged(string value)
+    {
+        ApplyView();
+
+        OnPropertyChanged(nameof(IsSearching));
+    }
+
+    public void ClearSearch() => SearchText = string.Empty;
+    partial void OnSortModeChanged(EProfileSortMode value) => ApplyView();
+
+    [RelayCommand]
+    private void SetSortMode(EProfileSortMode mode) => SortMode = mode;
+
     public Panel? ProfileListPanel { get; set; }
     public Func<ProfileCard, Border>? WrapCard { get; set; }
     public Action<ProfileCard>? HookEvents { get; set; }
-    
+
+    /* The view owns card sizing, so it has to run again whenever the panel is rebuilt */
+    public Action? OnLayoutChanged { get; set; }
+
     private bool hasDetectedGames;
 
     private async Task LoadAll()
@@ -98,127 +144,159 @@ public partial class ProfileSelectionViewModel : ViewModelBase
 
         await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            if (ProfileListPanel is not null)
-            {
-                ProfileListPanel.Children.Clear();
-            }
-
             foreach (var profile in sorted)
             {
-                var card = CreateCard(profile);
-                CardMap[profile.FileName] = card;
-                
-                if (ProfileListPanel is null) continue;
-                
-                ProfileListPanel.Children.Add(WrapCard!(card));
+                CardMap[profile.FileName] = CreateCard(profile);
             }
+
+            ApplyView();
         });
-        
+    }
+
+    /* Every card stays on the panel in sort order. Searching only flips visibility, because
+     * detaching and re-attaching cards costs a full re-realize of every splash, blur and flyout,
+     * which is far too slow to run on each keystroke. */
+    public void ApplyView()
+    {
         IsEmpty = CardMap.Count == 0;
+
+        if (ProfileListPanel is null)
+        {
+            HasNoMatches = false;
+            return;
+        }
+
+        PruneWrappers();
+
+        var ordered = Order(CardMap.Values.Where(card => card.ViewModel.Profile is not null).ToList());
+
+        SyncPanel(ordered);
+
+        var query = SearchText?.Trim() ?? string.Empty;
+        var matches = 0;
+
+        foreach (var card in ordered)
+        {
+            var isMatch = Matches(card.ViewModel.Profile!, query);
+
+            GetWrapper(card).IsVisible = isMatch;
+
+            if (isMatch) matches++;
+        }
+
+        HasNoMatches = !IsEmpty && matches == 0;
+
+        visibleCount = matches;
+        OnPropertyChanged(nameof(CountLabel));
+    }
+
+    /* Only touches the tree when the order or the membership actually moved */
+    private void SyncPanel(List<ProfileCard> ordered)
+    {
+        var children = ProfileListPanel!.Children;
+
+        if (children.Count == ordered.Count)
+        {
+            var identical = true;
+
+            for (var i = 0; i < ordered.Count; i++)
+            {
+                if (ReferenceEquals(children[i], GetWrapper(ordered[i]))) continue;
+
+                identical = false;
+                break;
+            }
+
+            if (identical) return;
+        }
+
+        children.Clear();
+
+        foreach (var card in ordered)
+        {
+            children.Add(GetWrapper(card));
+        }
+
+        OnLayoutChanged?.Invoke();
+    }
+
+    /* Reused so a reorder doesn't discard the Width the view measured, and so a card is never
+     * handed a second parent after being filtered out and back in */
+    private Border GetWrapper(ProfileCard card)
+    {
+        if (WrapperMap.TryGetValue(card, out var existing))
+        {
+            return existing;
+        }
+
+        var wrapper = WrapCard!(card);
+        WrapperMap[card] = wrapper;
+
+        return wrapper;
+    }
+
+    private void PruneWrappers()
+    {
+        if (WrapperMap.Count == 0) return;
+
+        var live = CardMap.Values.ToHashSet();
+
+        foreach (var card in WrapperMap.Keys.Where(card => !live.Contains(card)).ToList())
+        {
+            WrapperMap[card].Child = null;
+            WrapperMap.Remove(card);
+        }
+    }
+
+    private static bool Matches(Profile profile, string query)
+    {
+        return query.Length == 0 ||
+               profile.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+               profile.ArchiveDirectory.Contains(query, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private List<ProfileCard> Order(List<ProfileCard> cards)
+    {
+        if (SortMode == EProfileSortMode.LastUsed)
+        {
+            /* Never used sinks to the bottom rather than to 01/01/0001 among real dates */
+            return cards
+                .OrderByDescending(card => card.ViewModel.Profile!.Display.LastUsed ?? DateTime.MinValue)
+                .ThenBy(card => card.ViewModel.Profile!.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        var byProfile = cards.ToLookup(card => card.ViewModel.Profile!);
+
+        return Profile.SortProfiles(byProfile.Select(group => group.Key).ToList())
+            .SelectMany(profile => byProfile[profile])
+            .ToList();
     }
 
     public void AddProfile(Profile profile)
     {
-        if (CardMap.ContainsKey(profile.ArchiveDirectory))
+        if (CardMap.ContainsKey(profile.FileName))
         {
             return;
         }
 
-        var card = CreateCard(profile);
-        CardMap[profile.FileName] = card;
-            
-        IsEmpty = CardMap.Count == 0;
+        CardMap[profile.FileName] = CreateCard(profile);
 
-        InsertCardSorted(card);
+        ApplyView();
     }
 
     public void UpdateProfileCard(Profile profile)
     {
-        if (profile is null || profile.FileName is null) return;
-        
-        if (ProfileListPanel is null)
-        {
-            if (CardMap.TryGetValue(profile.FileName, out var savedCard))
-            {
-                savedCard.ViewModel.UpdateProfileProperties();
-            }
+        if (profile?.FileName is null) return;
+        if (!CardMap.TryGetValue(profile.FileName, out var card)) return;
 
-            return;
-        }
+        card.ViewModel.Profile = profile;
+        card.ViewModel.UpdateProfileProperties();
 
-        if (CardMap.TryGetValue(profile.FileName, out var card))
-        {
-            card.ViewModel.Profile = profile;
-            card.ViewModel.UpdateProfileProperties();
+        if (ProfileListPanel is null) return;
 
-            var existingBorder = ProfileListPanel.Children
-                .OfType<Border>()
-                .FirstOrDefault(b => b.Child == card);
-
-            if (existingBorder is null) return;
-
-            ProfileListPanel.Children.Remove(existingBorder);
-            IsEmpty = CardMap.Count == 0;
-
-            var newKey = profile.GetSortKey();
-
-            for (var i = 0; i < ProfileListPanel.Children.Count; i++)
-            {
-                if (ProfileListPanel.Children[i] is not Border border || border.Child is not ProfileCard existingCard ||
-                    existingCard.ViewModel.Profile is null)
-                {
-                    continue;
-                }
-
-                var existingKey = existingCard.ViewModel.Profile.GetSortKey();
-
-                var compare = newKey.IsNumeric switch
-                {
-                    false when !existingKey.IsNumeric => string.Compare(newKey.NameLower, existingKey.NameLower, StringComparison.Ordinal),
-                    true when existingKey.IsNumeric => existingKey.NumericVersion!.Value.CompareTo(newKey.NumericVersion!.Value),
-                    _ => newKey.IsNumeric ? 1 : -1
-                };
-
-                if (compare >= 0) continue;
-
-                ProfileListPanel.Children.Insert(i, existingBorder);
-                return;
-            }
-
-            ProfileListPanel.Children.Add(existingBorder);
-        }
-    }
-
-    private void InsertCardSorted(ProfileCard card)
-    {
-        if (card.ViewModel.Profile is null || ProfileListPanel is null) return;
-
-        var newKey = card.ViewModel.Profile.GetSortKey();
-
-        for (var i = 0; i < ProfileListPanel.Children.Count; i++)
-        {
-            if (ProfileListPanel.Children[i] is not Border border || border.Child is not ProfileCard existingCard ||
-                existingCard.ViewModel.Profile is null)
-            {
-                continue;
-            }
-
-            var existingKey = existingCard.ViewModel.Profile.GetSortKey();
-
-            var compare = newKey.IsNumeric switch
-            {
-                false when !existingKey.IsNumeric => string.Compare(newKey.NameLower, existingKey.NameLower, StringComparison.Ordinal),
-                true when existingKey.IsNumeric => existingKey.NumericVersion!.Value.CompareTo(newKey.NumericVersion!.Value),
-                _ => newKey.IsNumeric ? 1 : -1
-            };
-
-            if (compare >= 0) continue;
-
-            ProfileListPanel.Children.Insert(i, WrapCard!(card));
-            return;
-        }
-
-        ProfileListPanel.Children.Add(WrapCard!(card));
+        /* Last used may have just changed, so the order can move underneath us */
+        ApplyView();
     }
 
     private ProfileCard CreateCard(Profile profile)
