@@ -20,6 +20,7 @@ using Serilog;
 using Core.Resources;
 using Core.Resources.Convertors;
 using Core.Resources.Framework.Base;
+using Core.Resources.Utilities;
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /* Core Cloud Controller */
@@ -262,28 +263,44 @@ public partial class CloudApiController : ControllerBase
             {
                 case USoundWave wave:
                 {
-                    wave.Decode(true, out _, out var data);
+                    /* Raw hands back what the game cooked, decompressed unwraps the container the
+                     * codec is packed in. Neither one decides what codec comes out. */
+                    var shouldDecompress = MainProfile?.AudioFormat != EAudioFormatType.Raw;
+
+                    wave.Decode(shouldDecompress, out var audioFormat, out var data);
 
                     if (data != null)
                     {
                         var ownerName = wave.Owner!.Name;
                         ownerName = ownerName.SubstringBeforeWithLast('/').TrimEnd('/');
 
-                        Log.Information(Globals.AudioFilesFolder.FullName);
-
                         var cleanOwner = ownerName.TrimStart('/').Replace("/", "\\");
                         var savePath = Path.Combine(Globals.AudioFilesFolder.FullName, cleanOwner);
-                        var finalPath = Path.Combine(savePath, Path.GetFileName(path) + ".ogg");
-                        
+
+                        /* Named for the codec it actually is: newer titles cook RAD Audio, and
+                         * writing that as .ogg is how it ends up unreadable at the other end */
+                        var extension = AudioUtilities.ExtensionFor(audioFormat);
+                        var finalPath = Path.Combine(savePath, $"{Path.GetFileName(path)}.{extension}");
+
                         Directory.CreateDirectory(savePath);
                         System.IO.File.WriteAllBytes(finalPath, data);
 
+                        /* Anything else only travels as far as a decoder for it is installed */
+                        if (!AudioUtilities.IsReadable(audioFormat) && AudioUtilities.TryConvertToWav(finalPath, out var wavPath))
+                        {
+                            finalPath = wavPath;
+                            extension = "wav";
+                        }
+
+                        Log.Information($"[Core.Cloud]: Saved {audioFormat} audio as {finalPath}");
+
                         return new JsonResult(new
                         {
-                            file = finalPath
+                            file = finalPath,
+                            format = extension
                         });
                     }
-                    
+
                     break;
                 }
             }
@@ -388,8 +405,10 @@ public partial class CloudApiController : ControllerBase
     /* Return a sound wave file format */
     private ActionResult ProcessSoundWave(USoundWave wave)
     {
-        wave.Decode(true, out var audioFormat, out var data);
-        
+        var shouldDecompress = MainProfile?.AudioFormat != EAudioFormatType.Raw;
+
+        wave.Decode(shouldDecompress, out var audioFormat, out var data);
+
         if (data is null || string.IsNullOrEmpty(audioFormat))
         {
             return Conflict(new
@@ -400,16 +419,7 @@ public partial class CloudApiController : ControllerBase
             });
         }
 
-        var mimeType = audioFormat.ToLower() switch
-        {
-            "wem" => "application/vnd.wwise.wem",
-            "wav" => "audio/wav",
-            "adpcm" => "audio/adpcm",
-            "opus" => "audio/opus",
-            _ => "audio/ogg"
-        };
-
-        return File(data, mimeType);
+        return File(data, AudioUtilities.MimeTypeFor(audioFormat));
     }
 
     /* Handle raw exports */

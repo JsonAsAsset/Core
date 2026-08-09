@@ -64,7 +64,8 @@ public static class Globals
     public static readonly DirectoryInfo LogsFolder = new(Path.Combine(DataFolder, ".logs"));
     private static readonly DirectoryInfo ExportFolder = new(Path.Combine(RuntimeFolder.ToString(), ".export"));
     public static readonly DirectoryInfo AudioFilesFolder = new(Path.Combine(ExportFolder.ToString(), ".audio"));
-    
+    public static readonly DirectoryInfo AudioDecodersFolder = new(Path.Combine(InstallationFolder.ToString(), ".decoders"));
+
     public static void EnsureDirectories()
     {
         Directory.CreateDirectory(ProfilesFolder.FullName);
@@ -79,5 +80,6 @@ public static class Globals
         Directory.CreateDirectory(LogsFolder.FullName);
         Directory.CreateDirectory(ExportFolder.FullName);
         Directory.CreateDirectory(AudioFilesFolder.FullName);
+        Directory.CreateDirectory(AudioDecodersFolder.FullName);
     }
 }

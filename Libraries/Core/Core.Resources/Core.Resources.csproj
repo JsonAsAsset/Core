@@ -34,5 +34,9 @@
       <ProjectReference Include="..\..\..\Dependencies\CUE4Parse\CUE4Parse-Conversion\CUE4Parse-Conversion.csproj" />
       <ProjectReference Include="..\..\..\Dependencies\CUE4Parse\CUE4Parse\CUE4Parse.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Assets\Dependencies\*.exe" />
+    </ItemGroup>
 </Project>
 
