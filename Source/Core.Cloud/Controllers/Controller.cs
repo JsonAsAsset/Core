@@ -3,6 +3,7 @@ using CUE4Parse_Conversion.Exporters;
 using CUE4Parse_Conversion.Options;
 using CUE4Parse_Conversion.Sounds;
 using CUE4Parse_Conversion.Textures;
+using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Sound;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;
@@ -10,6 +11,7 @@ using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Engine.VectorField;
 using CUE4Parse.UE4.Objects.Meshes;
 using CUE4Parse.UE4.Versions;
+using CUE4Parse.UE4.VirtualFileSystem;
 using CUE4Parse.Utils;
 
 using Microsoft.AspNetCore.Mvc;
@@ -209,6 +211,18 @@ public partial class CloudApiController : ControllerBase
         provider.TryLoadPackageObject(path, export: out var localObject);
         provider.TryLoadPackage(path, out var package);
 
+        /* One path can be mounted from several containers, and the one that wins is simply whichever
+         * mounted last. Editor-side containers (UEFN ships one) carry the uncooked package: it reads
+         * back fine, it just has no platform data, so the texture comes out 0x0 with no pixels.
+         * Nothing below names a container, it only asks which copy actually cooked its pixels, so a
+         * texture that only exists in that container is still served from it. */
+        if (localObject is UTexture uncooked && !HasTextureData(uncooked) &&
+            FindCookedTexture(provider, path, uncooked.Name) is { } cooked)
+        {
+            package = cooked.Package;
+            localObject = cooked.Texture;
+        }
+
         if (package is not null)
         {
             localObject ??= package.ExportsLazy[0].Value;
@@ -307,8 +321,8 @@ public partial class CloudApiController : ControllerBase
         }
 
         /* Return a raw export */
-        if (raw) return HandleRawExport(path, provider);
-        if (metadata is true) return HandleExportMetadata(path, provider);
+        if (raw) return HandleRawExport(path, provider, package);
+        if (metadata is true) return HandleExportMetadata(path, provider, package);
 
         /* Switch on Class Type */
         return localObject switch
@@ -319,7 +333,7 @@ public partial class CloudApiController : ControllerBase
             UTexture texture => ProcessTexture(texture, contentType!),
             USoundWave wave => ProcessSoundWave(wave),
             UStaticMesh staticMesh => ProcessStaticMesh(staticMesh),
-            _ => HandleRawExport(path, provider)
+            _ => HandleRawExport(path, provider, package)
         };
     }
     
@@ -360,6 +374,49 @@ public partial class CloudApiController : ControllerBase
         {
             path = filePath.Replace("/", "\\")
         });
+    }
+
+    /* Whether this copy of a texture was cooked with its pixels attached. Streaming virtual textures
+     * keep theirs in the chunk table rather than in mips, everything else keeps at least one mip.
+     * An uncooked package has neither, only the editor's source description of the image. */
+    private static bool HasTextureData(UTexture texture)
+    {
+        var platformData = texture.PlatformData;
+
+        if (platformData is { FirstMipToSerialize: >= 0, VTData: { } virtualTexture } && virtualTexture.IsInitialized())
+        {
+            return true;
+        }
+
+        return platformData.Mips.Length > 0;
+    }
+
+    /* The other containers mounting this same path, in mount order, until one of them has a cooked
+     * copy of the export. Null when this path is uncooked everywhere it is mounted, which leaves the
+     * caller with what it already had. */
+    private static (IPackage Package, UTexture Texture)? FindCookedTexture(BaseProvider provider, string path, string exportName)
+    {
+        if (!provider.TryGetGameFile(path, out var mounted)) return null;
+
+        /* Keyed off the file that was actually picked, so this asks for the duplicates of that one
+         * rather than re-running path resolution and possibly landing somewhere else */
+        if (!provider.Files.TryGetValues(mounted.Path, out var candidates) || candidates.Count < 2) return null;
+
+        foreach (var candidate in candidates)
+        {
+            if (ReferenceEquals(candidate, mounted)) continue;
+            if (!provider.TryLoadPackage(candidate, out var candidatePackage)) continue;
+
+            var export = candidatePackage.GetExportOrNull(exportName, StringComparison.OrdinalIgnoreCase);
+            if (export is not UTexture texture || !HasTextureData(texture)) continue;
+
+            var container = candidate is VfsEntry { Vfs: { } vfs } ? vfs.Name : "disk";
+            Log.Information($"[Core.Cloud]: {path} is uncooked in the container it mounted from, using the cooked copy in {container}");
+
+            return (candidatePackage, texture);
+        }
+
+        return null;
     }
 
     /* Return a texture as a file / encoding */
@@ -423,13 +480,18 @@ public partial class CloudApiController : ControllerBase
     }
 
     /* Handle raw exports */
-    public ActionResult HandleRawExport(string path, BaseProvider provider)
+    /* Public on a controller means MVC treats it as an action and tries to bind its arguments, and
+     * more than one of those binds from the body, which is refused when the routes are built */
+    [NonAction]
+    public ActionResult HandleRawExport(string path, BaseProvider provider, IPackage? package = null)
     {
         try
         {
             var objectPath = $"{path.SubstringBefore('.')}.o.uasset";
 
-            var pkg = provider.LoadPackage(path);
+            /* Loading by path again would undo any choice the caller already made between containers
+             * mounting this path, so its package is used when there is one */
+            var pkg = package ?? provider.LoadPackage(path);
             var exports = pkg.GetExports().ToArray();
             var finalExports = new List<UObject>(exports);
 
@@ -477,11 +539,12 @@ public partial class CloudApiController : ControllerBase
         }
     }
     
-    public ActionResult HandleExportMetadata(string path, BaseProvider provider)
+    [NonAction]
+    public ActionResult HandleExportMetadata(string path, BaseProvider provider, IPackage? package = null)
     {
         try
         {
-            var json = JsonConvert.SerializeObject(provider.LoadPackage(path), Formatting.Indented);
+            var json = JsonConvert.SerializeObject(package ?? provider.LoadPackage(path), Formatting.Indented);
 
             return new ContentResult
             {
