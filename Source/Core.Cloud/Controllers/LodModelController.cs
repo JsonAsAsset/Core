@@ -21,7 +21,7 @@ public partial class CloudApiController
 
     /* Influences are flattened: BonesPerVertex entries per vertex, indexed into the owning
      * section's bone map, with a matching weight normalized to one */
-    private sealed record LodVertices(int Count, int BonesPerVertex, float[] Positions, float[] Normals, float[] Tangents, float[] UVs, int NumTexCoords, uint[] Colors, int[] Bones, float[] Weights);
+    private sealed record LodVertices(int Count, int BonesPerVertex, float[] Positions, float[] Normals, float[] Tangents, float[] Binormals, float[] UVs, int NumTexCoords, uint[] Colors, int[] Bones, float[] Weights);
 
     private sealed record LodModel(int Index, uint[] Indices, List<LodSection> Sections, LodVertices Vertices);
 
@@ -109,6 +109,7 @@ public partial class CloudApiController
         var positions = new float[verts.Length * 3];
         var normals = new float[verts.Length * 3];
         var tangents = new float[verts.Length * 3];
+        var binormals = new float[tangents.Length];
         var uvs = new float[verts.Length * numTexCoords * 2];
         var vertexColors = new uint[verts.Length];
         var bones = new int[verts.Length * bonesPerVertex];
@@ -122,11 +123,14 @@ public partial class CloudApiController
             positions[index * 3 + 1] = (float)vert.Pos.Y;
             positions[index * 3 + 2] = (float)vert.Pos.Z;
 
-            /* Normal[2] is the vertex normal, Normal[0] the U direction tangent */
+            /* Normal[2] is the vertex normal, Normal[0] the U direction tangent and Normal[1] the
+             * binormal. The binormal is not the cross of the other two: its sign is what says
+             * which way round a mirrored UV shell is lit, and reconstructing it loses that. */
             if (vert.Normal.Length > 2)
             {
                 var normal = (FVector)vert.Normal[2];
                 var tangent = (FVector)vert.Normal[0];
+                var binormal = (FVector)vert.Normal[1];
 
                 normals[index * 3 + 0] = (float)normal.X;
                 normals[index * 3 + 1] = (float)normal.Y;
@@ -135,6 +139,10 @@ public partial class CloudApiController
                 tangents[index * 3 + 0] = (float)tangent.X;
                 tangents[index * 3 + 1] = (float)tangent.Y;
                 tangents[index * 3 + 2] = (float)tangent.Z;
+
+                binormals[index * 3 + 0] = (float)binormal.X;
+                binormals[index * 3 + 1] = (float)binormal.Y;
+                binormals[index * 3 + 2] = (float)binormal.Z;
             }
 
             for (var uv = 0; uv < numTexCoords; uv++)
@@ -163,7 +171,7 @@ public partial class CloudApiController
             }
         }
 
-        var vertices = new LodVertices(verts.Length, bonesPerVertex, positions, normals, tangents, uvs, numTexCoords, vertexColors, bones, weights);
+        var vertices = new LodVertices(verts.Length, bonesPerVertex, positions, normals, tangents, binormals, uvs, numTexCoords, vertexColors, bones, weights);
 
         return new LodModel(lodIndex, indices, sections, vertices);
     }
