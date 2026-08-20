@@ -1,9 +1,12 @@
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Objects.Core.Math;
+using CUE4Parse.UE4.Objects.RenderCore;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.Utils;
 
 using Microsoft.AspNetCore.Mvc;
+
+using Serilog;
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 /* Core Cloud Controller: LOD Model                                                                                                 */
@@ -76,11 +79,41 @@ public partial class CloudApiController
         /* Both widths are normalized into Buffer on the way in */
         if (lodModel.Indices?.Buffer is not { Length: > 0 } indices) return null;
 
+        /* Before 4.14 a section named its triangles and nothing else: the vertices those triangles
+         * are drawn from, and the bones the vertices are skinned to, sat in a chunk beside it, and
+         * a vertex names its bones by an index into that chunk's map. The two were merged that
+         * version, so anything cooked before it is read back through its chunk instead. Chunks are
+         * written in step with the sections that own them, which is what pairs them here. */
+        var chunks = lodModel.Chunks ?? [];
+
+        if (chunks.Length > 0 && chunks.Length != lodModel.Sections.Length)
+        {
+            Log.Warning("[Core.Cloud]: LOD {LodIndex} has {Chunks} chunk(s) against {Sections} section(s), so some vertices are skinned by the wrong bone map",
+                lodIndex, chunks.Length, lodModel.Sections.Length);
+        }
+
         var sections = new List<LodSection>(lodModel.Sections.Length);
 
-        foreach (var section in lodModel.Sections)
+        for (var sectionIndex = 0; sectionIndex < lodModel.Sections.Length; sectionIndex++)
         {
-            var boneMap = section.BoneMap
+            var section = lodModel.Sections[sectionIndex];
+
+            var boneIndices = section.BoneMap;
+            var baseVertexIndex = (int)section.BaseVertexIndex;
+            var numVertices = section.NumVertices;
+
+            /* A section that names no bones at all is one of the old ones, since a section that
+             * draws anything is skinned to something */
+            if (boneIndices.Length == 0 && sectionIndex < chunks.Length)
+            {
+                var chunk = chunks[sectionIndex];
+
+                boneIndices = chunk.BoneMap;
+                baseVertexIndex = chunk.BaseVertexIndex;
+                numVertices = chunk.NumRigidVertices + chunk.NumSoftVertices;
+            }
+
+            var boneMap = boneIndices
                 .Select(BoneIndex => BoneIndex < boneInfo.Length ? boneInfo[BoneIndex].Name.Text : string.Empty)
                 .ToArray();
 
@@ -88,8 +121,8 @@ public partial class CloudApiController
                 section.MaterialIndex,
                 (int)section.BaseIndex,
                 (int)section.NumTriangles,
-                (int)section.BaseVertexIndex,
-                section.NumVertices,
+                baseVertexIndex,
+                numVertices,
                 boneMap));
         }
 
@@ -124,13 +157,12 @@ public partial class CloudApiController
             positions[index * 3 + 2] = (float)vert.Pos.Z;
 
             /* Normal[2] is the vertex normal, Normal[0] the U direction tangent and Normal[1] the
-             * binormal. The binormal is not the cross of the other two: its sign is what says
-             * which way round a mirrored UV shell is lit, and reconstructing it loses that. */
+             * binormal. */
             if (vert.Normal.Length > 2)
             {
                 var normal = (FVector)vert.Normal[2];
                 var tangent = (FVector)vert.Normal[0];
-                var binormal = (FVector)vert.Normal[1];
+                var binormal = GetBinormal(vert.Normal);
 
                 normals[index * 3 + 0] = (float)normal.X;
                 normals[index * 3 + 1] = (float)normal.Y;
@@ -174,6 +206,24 @@ public partial class CloudApiController
         var vertices = new LodVertices(verts.Length, bonesPerVertex, positions, normals, tangents, binormals, uvs, numTexCoords, vertexColors, bones, weights);
 
         return new LodModel(lodIndex, indices, sections, vertices);
+    }
+
+    /* The binormal a cook kept, or the one it left to be worked out again.
+     *
+     * A mesh only stores two of the three axes: the third is the cross of the other two, turned by
+     * the sign the normal carries in its fourth component, which is what says which way round a
+     * mirrored UV shell is lit. Old skeletal meshes come off the skin buffer with the binormal left
+     * null, and meshes read out of render data come back with an all zero one standing in for it,
+     * so neither is worth reading and both are rebuilt here the way the renderer does it. */
+    private static FVector GetBinormal(FPackedNormal[] basis)
+    {
+        var stored = basis[1];
+
+        if (stored is not null && stored.Data != 0) return (FVector)stored;
+
+        var sign = basis[2].W < 0.0f ? -1.0f : 1.0f;
+
+        return FVector.CrossProduct((FVector)basis[2], (FVector)basis[0]) * sign;
     }
 
     /* Full precision and half precision UVs land in different arrays */
