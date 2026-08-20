@@ -235,5 +235,21 @@
       </ItemGroup>
       <Delete Files="@(PdbFiles)" />
   </Target>
+  <!-- CUE4Parse's native half, which is what decompresses ACL animation. It is added to CUE4Parse's
+       own output from inside a build target, and items added that way don't travel to a project that
+       merely references it, so the app is left calling a library that isn't beside it. Copied here,
+       and quietly skipped when the native build was turned off. -->
+  <Target Name="CopyCUE4ParseNatives" AfterTargets="Build">
+    <ItemGroup>
+      <CUE4ParseNatives Include="..\..\Dependencies\CUE4Parse\CUE4Parse-Natives\bin\$(Configuration)\CUE4Parse-Natives.dll" />
+      <CUE4ParseNatives Include="..\..\Dependencies\CUE4Parse\CUE4Parse-Natives\bin\$(Configuration)\CUE4Parse-Natives.pdb" Condition="'$(Configuration)' == 'Debug'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(CUE4ParseNatives)"
+          DestinationFolder="$(OutputPath)"
+          SkipUnchangedFiles="true"
+          Condition="Exists('%(CUE4ParseNatives.FullPath)')" />
+  </Target>
+
 </Project>
 

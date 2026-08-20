@@ -1,3 +1,6 @@
 [submodule "Dependencies/CUE4Parse"]
 	path = Dependencies/CUE4Parse
 	url = https://github.com/FabianFG/CUE4Parse
+[submodule "Source/Core.Cloud/Extensions"]
+	path = Source/Core.Cloud/Extensions
+	url = https://github.com/JsonAsAsset/App.Extensions.git
