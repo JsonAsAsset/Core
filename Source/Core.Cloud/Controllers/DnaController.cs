@@ -52,9 +52,7 @@ public partial class CloudApiController
         var profile = FindBaseProfileForPath(path, found: out var found);
         if (!found) return NotFoundResponse;
 
-        profile.Provider.TryLoadPackageObject(path, export: out var localObject);
-
-        if (localObject is not USkeletalMesh skeletalMesh || skeletalMesh.AssetUserData is null)
+        if (LoadExportOfType<USkeletalMesh>(profile.Provider, path) is not { } skeletalMesh || skeletalMesh.AssetUserData is null)
         {
             return NotFoundResponse;
         }

@@ -44,9 +44,7 @@ public partial class CloudApiController
         var profile = FindBaseProfileForPath(path, found: out var found);
         if (!found) return NotFoundResponse;
 
-        profile.Provider.TryLoadPackageObject(path, export: out var localObject);
-
-        if (localObject is not UCurveExpressionsDataAsset asset || asset.ExpressionData?.ExpressionMap is not { } map)
+        if (LoadExportOfType<UCurveExpressionsDataAsset>(profile.Provider, path) is not { } asset || asset.ExpressionData?.ExpressionMap is not { } map)
         {
             return NotFoundResponse;
         }

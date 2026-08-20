@@ -42,9 +42,7 @@ public partial class CloudApiController
         var profile = FindBaseProfileForPath(path, found: out var found);
         if (!found) return NotFoundResponse;
 
-        profile.Provider.TryLoadPackageObject(path, export: out var localObject);
-
-        if (localObject is not UStaticMesh { RenderData: { } renderData } staticMesh)
+        if (LoadExportOfType<UStaticMesh>(profile.Provider, path) is not { RenderData: { } renderData } staticMesh)
         {
             return NotFoundResponse;
         }

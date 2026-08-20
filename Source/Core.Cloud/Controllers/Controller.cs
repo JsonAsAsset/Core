@@ -561,6 +561,28 @@ public partial class CloudApiController : ControllerBase
         return NotFoundResponse;
     }
     
+    /* The export an endpoint is about, which is not always the one named after the package holding
+     * it: SK_StopAxe holds its mesh as SK_StopAxe_StopAxe, and a provider asked for the object by
+     * the package's name comes back with nothing. Asked for by name first, so a package holding
+     * several of a kind still answers with the one that was named, and otherwise the first export
+     * of the kind wanted. */
+    private static T? LoadExportOfType<T>(BaseProvider provider, string path) where T : UObject
+    {
+        provider.TryLoadPackageObject(path, export: out var localObject);
+
+        if (localObject is T named) return named;
+
+        if (provider.TryLoadPackage(path, out var package))
+        {
+            foreach (var lazyExport in package.ExportsLazy)
+            {
+                if (lazyExport.Value is T export) return export;
+            }
+        }
+
+        return null;
+    }
+
     /* If the path exists on the main profile, it'll check if other profiles specifically override the main profile, if so it'll pick that, else it'll give the one found initially
      * If the path doesn't exist on a main profile, it'll cycle through each profile to find one that has the asset existing */
     private static BaseProfile FindBaseProfileForPath(string rawPath, out bool found)
