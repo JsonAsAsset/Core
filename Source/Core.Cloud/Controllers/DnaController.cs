@@ -5,6 +5,8 @@ using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.Utils;
 
+using Core.Cloud.Objects;
+
 using Microsoft.AspNetCore.Mvc;
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -23,14 +25,14 @@ namespace Core.Cloud.Controllers;
 public partial class CloudApiController
 {
     /* A DNA in its own package is class 'DNA' rather than 'DNAAsset', and nothing reads it without
-     * being told the two are the same thing */
-    private static readonly bool DnaClassAliasRegistered = RegisterDnaClassAlias();
-
-    private static bool RegisterDnaClassAlias()
+     * being told what that is.
+     *
+     * A static constructor rather than a field initializer: a field nothing ever reads is one the
+     * runtime is free to never initialize, which left the registration undone and every standalone
+     * DNA coming back as a bare UObject. */
+    static CloudApiController()
     {
-        ObjectTypeRegistry.RegisterClass("DNA", typeof(UDNAAsset));
-
-        return true;
+        ObjectTypeRegistry.RegisterClass("DNA", typeof(UDNA));
     }
 
     /* The mesh's DNA, as the bytes RigLogic reads. Cooked packages keep the behavior layer and
@@ -52,41 +54,63 @@ public partial class CloudApiController
         var profile = FindBaseProfileForPath(path, found: out var found);
         if (!found) return NotFoundResponse;
 
-        if (LoadExportOfType<USkeletalMesh>(profile.Provider, path) is not { } skeletalMesh || skeletalMesh.AssetUserData is null)
+        /* Every export in the package, rather than only what the mesh's AssetUserData names: cooking
+         * drops that property, so on most heads the DNAAssetUserData sits in the package with
+         * nothing pointing at it. This covers that, a DNA asked for directly, and a mesh that does
+         * still carry the reference. */
+        if (profile.Provider.TryLoadPackage(path, out var package))
         {
-            return NotFoundResponse;
+            foreach (var export in package.GetExports())
+            {
+                if (FindDnaBytes(export) is { } bytes)
+                {
+                    return File(bytes, "application/octet-stream", $"{export.Name}.dna");
+                }
+            }
         }
 
-        foreach (var userData in skeletalMesh.AssetUserData)
+        if (LoadExportOfType<USkeletalMesh>(profile.Provider, path) is { AssetUserData: not null } skeletalMesh)
         {
-            if (!userData.TryLoad(out var loaded) || loaded is null) continue;
-
-            if (FindDnaBytes(loaded) is { } bytes)
+            foreach (var userData in skeletalMesh.AssetUserData)
             {
-                return File(bytes, "application/octet-stream", $"{loaded.Name}.dna");
+                if (!userData.TryLoad(out var loaded) || loaded is null) continue;
+
+                if (FindDnaBytes(loaded) is { } bytes)
+                {
+                    return File(bytes, "application/octet-stream", $"{loaded.Name}.dna");
+                }
             }
         }
 
         return NotFoundResponse;
     }
 
-    /* The user data either is the DNA, or names one sitting in a package of its own */
-    private static byte[]? FindDnaBytes(UObject userData)
+    /* The user data either is the DNA, or names one sitting in a package of its own. Which class it
+     * comes back as depends on how the package spelled it, so the reference is followed as whatever
+     * it is and asked the same question again. */
+    private static byte[]? FindDnaBytes(UObject userData, int depth = 0)
     {
+        if (depth > 4) return null;
+
+        if (userData is UDNA standalone)
+        {
+            return standalone.ReadStream() is { Length: > 0 } stream ? stream : null;
+        }
+
         if (userData is UDNAAsset direct)
         {
             return direct.DNAData is { } data && data.Value.Length > 0 ? data.Value : null;
         }
 
-        if (userData.TryGetValue<UDNAAsset>(out var referenced, "DNAAsset") && referenced is not null)
+        if (userData.TryGetValue<UObject>(out var referenced, "DNAAsset") && referenced is not null)
         {
-            return referenced.DNAData is { } data && data.Value.Length > 0 ? data.Value : null;
+            return FindDnaBytes(referenced, depth + 1);
         }
 
         if (userData.TryGetValue<FPackageIndex>(out var index, "DNAAsset") &&
-            index.TryLoad<UDNAAsset>(out var loaded) && loaded is not null)
+            index.TryLoad<UObject>(out var loaded) && loaded is not null)
         {
-            return loaded.DNAData is { } data && data.Value.Length > 0 ? data.Value : null;
+            return FindDnaBytes(loaded, depth + 1);
         }
 
         return null;
