@@ -76,7 +76,13 @@ public partial class ProfileEditorViewModel : ProfileViewModelBase
             });
         }
 
-        var sorted = PakKeyEntries.OrderBy(e => e.FileName, StringComparer.OrdinalIgnoreCase).ToList();
+        /* Entries without a container sort by guid because that is the only thing they have, and they
+         * sort last: they are leftovers from older builds, not something to scroll past on the way to
+         * the containers this installation is actually waiting on a key for. */
+        var sorted = PakKeyEntries
+            .OrderBy(e => e.HasContainer ? 0 : 1)
+            .ThenBy(e => e.HasContainer ? e.FileName : e.Guid, StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         PakKeyEntries.Clear();
 

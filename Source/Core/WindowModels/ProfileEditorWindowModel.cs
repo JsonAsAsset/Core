@@ -154,7 +154,10 @@ public partial class ProfileEditorWindowModel : ProfileEditorViewModel
                 Profile.Encryption.Keys.Any(k =>
                     !string.IsNullOrWhiteSpace(k.Key) &&
                     k.Key != entry.Key))
-            .GroupBy(entry => entry.FileName)
+            /* Keyed on the guid, which is what a key is actually identified by. Grouping on the file
+             * name collapsed every entry whose container is missing into one group, and dropped all
+             * but the first of them on save. */
+            .GroupBy(entry => entry.Guid)
             .Select(group => group.First())
             .Select(entry => new EncryptionKey
             {

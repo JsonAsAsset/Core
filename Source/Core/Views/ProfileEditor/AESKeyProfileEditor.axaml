@@ -38,7 +38,7 @@
                                 <Grid Margin="25">
                                     <StackPanel Orientation="Vertical" Spacing="25" Margin="0">
                                         <StackPanel Orientation="Vertical" Spacing="7">
-                                            <TextBlock Text="{Binding FileName}" FontSize="16" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="16" VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding Guid}" FontSize="13" Opacity="0.56" VerticalAlignment="Center"/>
                                         </StackPanel>
                                 
