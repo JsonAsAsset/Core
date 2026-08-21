@@ -10,7 +10,7 @@ public sealed class FortniteProfileDetectionPlugin : IEpicGamesDetection, IGameV
 {
     public string GameId => "Fortnite";
     public string Name => "Fortnite Profile Detection";
-    public EGame TargetVersion => EGame.GAME_UE5_LATEST;
+    public EGame TargetVersion => EGame.GAME_UE6_LATEST;
     
     public async void Detect(List<BaseProfile> LoadedProfiles, Action<BaseProfile>? onDetected = null)
     {
