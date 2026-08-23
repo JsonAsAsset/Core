@@ -1,6 +1,8 @@
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Rig;
+using CUE4Parse.UE4.Assets.Exports.Rig;
 using CUE4Parse.UE4.Assets.Readers;
+using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Readers;
 
 using Newtonsoft.Json;
@@ -162,6 +164,93 @@ public class UDNA : UObject
         }
 
         return -1;
+    }
+
+    /* The rig as data: the joints, the pose they rest at, and what each control does to them.
+     *
+     * Read on demand, and only the two layers a pose needs. The geometry and the machine learned
+     * layers are a large part of a head and none of it says how a control moves a joint. */
+    public RawDefinition? Definition { get; private set; }
+    public RawBehavior? Behavior { get; private set; }
+
+    public bool ReadRig()
+    {
+        if (Definition is not null && Behavior is not null) return true;
+        if (!IsValidStream) return false;
+
+        var stream = ReadStream();
+        if (stream.Length == 0) return false;
+
+        ReadRig(stream, out var definition, out var behavior);
+
+        Definition ??= definition;
+        Behavior ??= behavior;
+
+        return Definition is not null && Behavior is not null;
+    }
+
+    /* The same read for a DNA that arrived as bytes rather than as one of these.
+     *
+     * A head that keeps its DNA in the mesh has it as a UDNAAsset holding the stream outright, with
+     * no UDNA anywhere, so the layers have to be readable without one. */
+    public static void ReadRig(byte[] stream, out RawDefinition? definition, out RawBehavior? behavior)
+    {
+        definition = null;
+        behavior = null;
+
+        /* A DNA kept in a package of its own has a few bytes of that package's own ahead of the
+         * stream, where one hung straight off a mesh starts at it. The reader wants the stream. */
+        for (var start = 0; start + 3 <= stream.Length && start < 64; start++)
+        {
+            if (stream[start] != 'D' || stream[start + 1] != 'N' || stream[start + 2] != 'A') continue;
+
+            if (start > 0) stream = stream[start..];
+
+            break;
+        }
+
+        if (stream.Length < 7 || stream[0] != 'D' || stream[1] != 'N' || stream[2] != 'A') return;
+
+        var Ar = new FArchiveBigEndian(new FByteArchive("DNA", stream));
+
+        /* Past the signature and the version that follows it */
+        Ar.Position = 7;
+
+        var version = (FileVersion) (((stream[3] << 8 | stream[4]) << 16) + (stream[5] << 8 | stream[6]));
+
+        /* From v26 the index table opens the stream. Before it, section offsets are kept in a
+         * lookup table that has to be turned into one. */
+        IndexTable indexTable;
+
+        if (version >= FileVersion.v26)
+        {
+            indexTable = new IndexTable(Ar);
+        }
+        else
+        {
+            var lookup = new SectionLookupTable(Ar);
+
+            var versionAr = new FArchiveBigEndian(new FByteArchive("DNA", stream)) { Position = 3 };
+
+            indexTable = new IndexTable(lookup, new DNAVersion(versionAr));
+        }
+
+        foreach (var entry in indexTable.Entries)
+        {
+            if (entry.Id is not ("defn" or "bhvr")) continue;
+
+            Ar.Position = entry.Offset;
+
+            try
+            {
+                if (entry.Id == "defn") definition = new RawDefinition(Ar);
+                else behavior = new RawBehavior(Ar);
+            }
+            catch
+            {
+                /* A layer that will not read leaves whatever else did */
+            }
+        }
     }
 
     /* The DNA itself, for whatever hands it to RigLogic */
