@@ -6,7 +6,7 @@ namespace Core.ViewModels.Settings;
 
 public partial class SerializationSettingsViewModel : ViewModelBase
 {
-    [ObservableProperty] private bool _readBlueprintBytecode;
+    [ObservableProperty] private bool _readBlueprintBytecode = true;
     [ObservableProperty] private bool _readMaterialShaderMaps;
 
     partial void OnReadBlueprintBytecodeChanged(bool value)
