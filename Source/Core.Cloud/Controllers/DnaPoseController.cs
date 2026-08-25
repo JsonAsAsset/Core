@@ -42,8 +42,7 @@ public partial class CloudApiController
      * does not name them, and whatever drives the poses has to be able to say which one it means. */
     private sealed record DnaCorrective(string Name, int Index, float Weight, string[] Inputs, string Expression);
 
-    /* A curve the poses need that no animation carries, written so the engine can work it out */
-    private sealed record DnaDriver(string Name, string Expression);
+
 
     /* A joint's three translations, three rotations and three scales, which is how a DNA writes
      * them whatever the rig does with them later */
@@ -51,7 +50,7 @@ public partial class CloudApiController
 
     /* One pose per raw control, or one per curve of an older head when a mapping is named */
     [HttpGet("export/dnaposes")]
-    public ActionResult GetDnaPoses(string? path, string? mapping, bool exact = false)
+    public ActionResult GetDnaPoses(string? path, string? mapping)
     {
         if (!IsBaseProfileReady || MainProfile is null) return NotInitializedResponse;
 
@@ -79,84 +78,24 @@ public partial class CloudApiController
 
         /* Whichever of the two the head still carries, asked the same question: drive these controls
          * by these amounts, and say what the joints did */
-        if (!TryBuildDnaEvaluator(behavior, source.RigLogic, joints.Length, controls.Length, out var evaluate, out var inputCount, out var psds))
+        if (!TryBuildDnaEvaluator(behavior, source.RigLogic, joints.Length, controls.Length, out var evaluate, out var inputCount, out _))
         {
             return NotFoundResponse;
         }
 
-        /* The correctives, named after the controls they multiply so a curve can be written for each */
-        var correctives = new DnaCorrective[psds.Length];
-
-        for (var index = 0; index < psds.Length; index++)
-        {
-            var names = psds[index].Inputs
-                .Select(input => input < controls.Length ? controls[input] : $"control{input}")
-                .ToArray();
-
-            var leaf = names.Select(name => name.SubstringAfterLast('.')).ToArray();
-            var name = $"CTRL_psd.{string.Join('_', leaf)}";
-
-            /* What PSDNetImpl::calculate does, written so the engine's own evaluator can do it:
-             * every input clamped, multiplied together, scaled, and held at one. */
-            var factors = names.Select(n => $"clamp({n.Replace('.', '_')}, 0, 1)");
-            var weight = psds[index].Weight;
-
-            var body = weight == 1.0f
-                ? string.Join(" * ", factors)
-                : $"{weight.ToString("R", CultureInfo.InvariantCulture)} * {string.Join(" * ", factors)}";
-
-            correctives[index] = new DnaCorrective(name, controls.Length + index, weight, names, $"min(1, {body})");
-        }
-
-        /* Two names the same is a name that cannot be driven, so any repeat takes its index instead */
-        {
-            var seen = new Dictionary<string, int>();
-
-            for (var index = 0; index < correctives.Length; index++)
-            {
-                var name = correctives[index].Name;
-
-                if (seen.TryGetValue(name, out var count))
-                {
-                    seen[name] = count + 1;
-                    correctives[index] = correctives[index] with { Name = $"{name}_{count + 1}" };
-                }
-                else
-                {
-                    seen[name] = 0;
-                }
-            }
-        }
 
         /* What to bake: an older head's curves where a mapping was named, otherwise the rig's own
          * controls one at a time. A mapping that cannot be read, or none of whose controls this rig
          * has, falls back to the controls rather than to nothing: a head with no poses at all is a
          * worse answer than one posed by its own rig. */
-        var drivers = new List<DnaDriver>();
-
-        /* Exact asks for poses the rig can be rebuilt out of rather than approximated by. With a
-         * mapping those are the older head's curves plus what it takes to answer them exactly;
-         * without one they are the columns of the joint matrix, named by the rig's own controls. */
+        /* One pose an older head's curve where a mapping says what those curves do to this rig,
+         * otherwise one a control */
         List<(string Name, Dictionary<int, float> Drive)> plan =
-            exact && !string.IsNullOrWhiteSpace(mapping)
-                ? BuildBackportExactPlan(mapping, controls, correctives, controls.Length, out drivers)
-                : exact || string.IsNullOrWhiteSpace(mapping)
-                    ? []
-                    : BuildBackportPlan(mapping, controls);
+            string.IsNullOrWhiteSpace(mapping) ? [] : BuildBackportPlan(mapping, controls);
 
         var backported = plan.Count != 0;
 
-        if (!backported)
-        {
-            plan = BuildControlPlan(controls);
-
-            if (exact)
-                foreach (var corrective in correctives)
-                {
-                    plan.Add((corrective.Name, new Dictionary<int, float> { [corrective.Index] = 1.0f }));
-                    drivers.Add(new DnaDriver(corrective.Name, corrective.Expression));
-                }
-        }
+        if (!backported) plan = BuildControlPlan(controls);
 
         if (plan.Count == 0) return NotFoundResponse;
 
@@ -171,7 +110,7 @@ public partial class CloudApiController
 
             var byJoint = new Dictionary<int, float[]>();
 
-            foreach (var (output, value) in evaluate(inputs, !exact))
+            foreach (var (output, value) in evaluate(inputs, true))
             {
                 var joint = output / DnaJointAttributes;
 
@@ -212,7 +151,7 @@ public partial class CloudApiController
         /* Which joint each one hangs off, so a root can be told from the rest of them */
         var parents = definition.JointHierarchy;
 
-        return new JsonResult(new { joints, parents, controls, backported, exact, drivers, attributes = DnaJointAttributes, neutral, poses });
+        return new JsonResult(new { joints, parents, controls, backported, attributes = DnaJointAttributes, neutral, poses });
     }
 
     /* Drive these controls by these amounts, and say what every joint attribute did.
@@ -396,46 +335,30 @@ public partial class CloudApiController
         return true;
     }
 
-    /* An older head's curves, and everything else the rig needs to answer them exactly.
-     *
-     * The joints are the matrix times the whole input vector, so anything driving that vector is a
-     * pose. Three things drive it here, and all three are read straight off the matrix with the
-     * correctives left switched off, since the correctives arrive as poses of their own:
-     *
-     *   the older head's curves   the controls that curve moves, before anything clamps them
-     *   the correctives           one column each, driven by the product they stand for
-     *   the overflow              one column each, negated, driven by whatever ran past one
-     *
-     * The overflow is what makes this exact rather than close. Poses scale and add, so two curves
-     * driving one control hand it the sum where the rig hands it the sum clamped: subtracting that
-     * control's own column by however far the sum ran over lands on the same face the rig does. */
-    private List<(string Name, Dictionary<int, float> Drive)> BuildBackportExactPlan(
-        string mapping, string[] controls, DnaCorrective[] correctives, int rawControlCount, out List<DnaDriver> drivers)
+    /* Every expression the mapping writes for a control this rig has, with the text it compiled
+     * from, and the older head's curves those expressions read */
+    private bool TryReadMapping(string mapping, string[] controls,
+        out List<(int Control, string Name, FExpressionObject Expression, string Text)> written,
+        out SortedSet<string> sources)
     {
-        var plan = new List<(string, Dictionary<int, float>)>();
-
-        drivers = [];
+        written = [];
+        sources = new SortedSet<string>(StringComparer.Ordinal);
 
         var path = mapping.SubstringBefore('.');
         var profile = FindBaseProfileForPath(path, found: out var found);
 
-        if (!found) return plan;
+        if (!found) return false;
 
         if (LoadExportOfType<UCurveExpressionsDataAsset>(profile.Provider, path) is not { } asset ||
             asset.ExpressionData?.ExpressionMap is not { } map)
         {
-            return plan;
+            return false;
         }
 
         var byName = new Dictionary<string, int>(controls.Length);
 
         for (var control = 0; control < controls.Length; control++)
             byName[controls[control].Replace('.', '_')] = control;
-
-        /* Every expression the mapping writes for a control this rig has, with the text it was
-         * compiled from, since the driving curves are written in terms of that same text */
-        var written = new List<(int Control, string Name, FExpressionObject Expression, string Text)>();
-        var sources = new SortedSet<string>(StringComparer.Ordinal);
 
         foreach (var (target, expression) in map)
         {
@@ -447,9 +370,19 @@ public partial class CloudApiController
                 if (element.TryGet<FName>(out var constant)) sources.Add(constant.Text);
         }
 
-        if (written.Count == 0) return plan;
+        return written.Count != 0;
+    }
 
-        /* One pose an older curve: that curve the whole way up, and what it leaves the controls at */
+    /* One pose an older curve: that curve the whole way up, and what it leaves the controls at.
+     *
+     * Read forward rather than inverted. The mapping is written as what the older head's curves do
+     * to this rig, which is the question being asked, so nothing here has to guess its way back
+     * through it. */
+    private static List<(string Name, Dictionary<int, float> Drive)> BuildLegacyPlan(
+        List<(int Control, string Name, FExpressionObject Expression, string Text)> written, SortedSet<string> sources)
+    {
+        var plan = new List<(string, Dictionary<int, float>)>(sources.Count);
+
         foreach (var source in sources)
         {
             var drive = new Dictionary<int, float>();
@@ -465,65 +398,7 @@ public partial class CloudApiController
             if (drive.Count != 0) plan.Add((source, drive));
         }
 
-        /* One pose a corrective, driven by the product it stands for, written out of the older
-         * head's curves so the whole thing reads from one place */
-        var text = written.ToDictionary(entry => entry.Name, entry => entry.Text);
-
-        foreach (var corrective in correctives)
-        {
-            var factors = new List<string>();
-            var known = true;
-
-            foreach (var input in corrective.Inputs)
-            {
-                if (!text.TryGetValue(input.Replace('.', '_'), out var expression)) { known = false; break; }
-
-                factors.Add($"clamp({expression}, 0, 1)");
-            }
-
-            /* A corrective reading a control the mapping never writes can never fire */
-            if (!known || factors.Count == 0) continue;
-
-            var body = corrective.Weight == 1.0f
-                ? string.Join(" * ", factors)
-                : $"{corrective.Weight.ToString("R", CultureInfo.InvariantCulture)} * {string.Join(" * ", factors)}";
-
-            plan.Add((corrective.Name, new Dictionary<int, float> { [corrective.Index] = 1.0f }));
-            drivers.Add(new DnaDriver(corrective.Name, $"min(1, {body})"));
-        }
-
-        /* One pose a control that clamps, negated, driven by however far its sum ran past one */
-        foreach (var (control, name, _, entry) in written)
-        {
-            if (Unclamped(entry) is not { } inner) continue;
-
-            var over = $"CTRL_over.{name.SubstringAfter('_').Replace('_', '.').SubstringAfterLast('.')}";
-
-            plan.Add((over, new Dictionary<int, float> { [control] = -1.0f }));
-            drivers.Add(new DnaDriver(over, $"({inner}) - clamp(({inner}), 0, 1)"));
-        }
-
         return plan;
-    }
-
-    /* What a clamped expression says before it clamps, or nothing when it does not clamp */
-    private static string? Unclamped(string expression)
-    {
-        var text = expression.Trim();
-
-        if (!text.StartsWith("clamp(", StringComparison.Ordinal) || !text.EndsWith(")", StringComparison.Ordinal)) return null;
-
-        var body = text["clamp(".Length..^1];
-        var depth = 0;
-
-        for (var index = 0; index < body.Length; index++)
-        {
-            if (body[index] == '(') depth++;
-            else if (body[index] == ')') depth--;
-            else if (body[index] == ',' && depth == 0) return body[..index].Trim();
-        }
-
-        return null;
     }
 
     /* The rig's own controls, one at a time. A control is named with a dot between its group and
