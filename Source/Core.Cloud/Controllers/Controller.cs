@@ -332,48 +332,8 @@ public partial class CloudApiController : ControllerBase
             UVectorFieldStatic vectorField when contentType == "application/octet-stream" => ProcessVectorField(vectorField),
             UTexture texture => ProcessTexture(texture, contentType!),
             USoundWave wave => ProcessSoundWave(wave),
-            UStaticMesh staticMesh => ProcessStaticMesh(staticMesh),
             _ => HandleRawExport(path, provider, package)
         };
-    }
-    
-    private static JsonResult ProcessStaticMesh(UStaticMesh staticMesh)
-    {
-        var options = new ExportOptions(
-            meshFormat: EMeshFormat.ActorX,
-            exportMaterials: false,
-            exportMorphTargets: false
-        );
-
-        var session = new ExportSession();
-        session.Add(staticMesh);
-
-        /* The session picks the paths and writes the files itself now, so there is no laying out
-         * of directories left to do here. Waited on because the controller is synchronous. */
-        var results = session
-            .RunAsync(Globals.RuntimeFolder.FullName, options)
-            .GetAwaiter()
-            .GetResult();
-
-        var result = results.FirstOrDefault(Result => Result.Success);
-        var filePath = result?.DiskFilePaths?.FirstOrDefault();
-
-        if (filePath is null)
-        {
-            return new JsonResult(new
-            {
-                errored = true,
-                exceptionstring = results.FirstOrDefault()?.Error?.Message ?? "Static mesh export produced no files"
-            })
-            {
-                StatusCode = StatusCodes.Status500InternalServerError
-            };
-        }
-
-        return new JsonResult(new
-        {
-            path = filePath.Replace("/", "\\")
-        });
     }
 
     /* Whether this copy of a texture was cooked with its pixels attached. Streaming virtual textures
