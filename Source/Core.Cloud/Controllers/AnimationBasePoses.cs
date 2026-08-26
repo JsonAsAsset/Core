@@ -25,6 +25,31 @@ public partial class CloudApiController
      * they are written and the first one that is actually there wins. */
     private sealed record AdditiveBase(string Pattern, params string[] BasePoses);
 
+    private static readonly string[] AR_NonTargeted =
+    [
+        "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/AssaultRifle/AR_NonTargeted_Pose_CMM", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_AssaultRifle_NonTargeted"
+    ];
+    
+    private static readonly string[] AR_Targeted =
+    [
+        "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_AssaultRifle_Targeted"
+    ];
+    
+    private static readonly string[] Rifle =
+    [
+        "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/Rifle_NonTargeted_CMM"
+    ];
+    
+    private static readonly string[] Pistol =
+    [
+        "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_Pistol_HF"
+    ];
+    
+    private static readonly string[] Pistol_Targeted =
+    [
+        "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_Pistol_DS"
+    ];
+
     /* Matched against the sequence's name, first match wins, so anything more particular goes above
      * whatever is broader than it */
     private static readonly AdditiveBase[] AdditiveBasePoses =
@@ -34,13 +59,25 @@ public partial class CloudApiController
 
         new("Idle_Noise_SneakySnowman", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_NoWep_Relaxed"),
         new("Idle_Noise", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_NoWep_Relaxed"),
+        
+        new("CantDoIt", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_NoWep_Relaxed"),
+        new("CantDoIt_Neutral", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_NoWep_Relaxed"),
+
+        new("FromStanding_From*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_NoWep_Relaxed"),
+        new("FromStanding_InFront*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_NoWep_Relaxed"),
+        
         new("Idle_Noise_AR_Downsights", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/AssaultRifle/AR_NonTargeted_Pose_CMM"),
         new("Idle_Noise_ConsumableLarge_CMM", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/ConsumableLarge/ConsumableLarge_Pose_CMM"),
         new("ConsumableSmall_IdleNoise_CMM", "FortniteGame/Content/Animation/Game/MainPlayer/Combat/Gadgets/Medium/Male/ConsumableSmall/ConsumableSmall_Pose_CMM"),
         new("AssaultRifle_Core_Relaxed_IdleNoise", "FortniteGame/Plugins/GameFeatures/SharedWeaponAnims/Content/Poses/RedDot_AR/AssaultRifle_Core_RedDot_Relaxed"),
         new("ButterflyLook_AO_*", "FortniteGame/Content/Animation/Game/MainPlayer/Combat/Gadgets/Medium/Male/GhostRock/GhostRock_Base_Pose_CMM"),
         new("Pistol_Fang_NonTargeted_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/AO/Pistol_Fang_Pose_NonTargeted"),
-        new("Pistol_NonTargeted_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_Pistol_HF"),
+        new("Pistol_NonTargeted_*", Pistol),
+        new("Pistol_Zapper_Fire_*", Pistol),
+        new("PistolAuto_Fire", Pistol),
+        new("Pistol_GripClipLong_Fire_*", Pistol),
+        new("M_AO_Pistol_Downsights*", Pistol_Targeted),
+
         new("GhostRock_AO_*", "FortniteGame/Content/Animation/Game/MainPlayer/Combat/Gadgets/Medium/Male/GhostRock/GhostRock_Base_Pose_CMM"),
         new("GhostRock_Idle_Leans_*", "FortniteGame/Content/Animation/Game/MainPlayer/Combat/Gadgets/Medium/Male/GhostRock/GhostRock_Base_Pose_CMM", "FortniteGame/Content/Animation/Game/MainPlayer/Combat/Gadgets/Medium/Male/GhostRock/GhostRock_Base_Pose_CMM"),
         new("Launcher_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/Launcher_CMM"),
@@ -50,9 +87,20 @@ public partial class CloudApiController
         new("Flashlight_NTAO_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/Flashlight/Handheld_Flashlight_Pose_CMM"),
         new("FeyCrab_Target_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/FeyCrab/FeyCrab_Targeted_Pose_Male"),
         new("Bow_NT_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/ExplosiveBow/ExplosiveBow_NonTargeting_Pose_CMM"),
-        new("AR_NonTargeted_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/AssaultRifle/AR_NonTargeted_Pose_CMM"),
         new("DrumGun_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/AutoDrum/Pose_AutoDrum_NonTargeted_CMM"),
-        new("TacticalShotgun02_NonTargeted_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/TacticalShotgun02/TacticalShotgun02_NonTargeted_CMM")
+        new("TacticalShotgun02_NonTargeted_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/TacticalShotgun02/TacticalShotgun02_NonTargeted_CMM"),
+        
+        new("Sprint_Lean_*", "FortniteGame/Content/Animation/Game/MainPlayer/Locomotion/Medium/Male/Sprint/Sprint_Default"),
+        
+        /* AR */
+        new("AR_NonTargeted_*", AR_NonTargeted),
+        new("M_AO_AR_Downsights*", AR_Targeted),
+        new("AssaultRifle_FrontClip_DownSightsFire_*", AR_NonTargeted),
+        new("AssaultRifle_FrontClip_HipFire_*", AR_NonTargeted),
+        new("BoltAction_SniperRifle_NoScope_Fire_*", AR_NonTargeted),
+        
+        new("Shotgun_Default_DownsightsFire_*", Rifle),
+        new("Shotgun_Default_Hipfire_*", Rifle),
     ];
 
     /* What the game calls the animation an additive was taken from, when it calls it anything at
