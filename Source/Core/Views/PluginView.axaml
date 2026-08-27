@@ -1,0 +1,256 @@
+<UserControl
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:fluent="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+    xmlns:material="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+    xmlns:settings="clr-namespace:Core.ViewModels.Settings"
+    xmlns:plugins="clr-namespace:Core.Models.Plugins"
+
+    x:Class="Core.Views.PluginView"
+    x:DataType="settings:PluginSettingsViewModel"
+
+    mc:Ignorable="d"
+    d:DesignWidth="1500"
+    d:DesignHeight="1500">
+
+    <UserControl.Styles>
+        <!-- Colour carries the install state, and eases between them rather than snapping -->
+        <Style Selector="Border.ProjectTile">
+            <Setter Property="Background" Value="#1a1a1a"/>
+            <Setter Property="BorderBrush" Value="#3d3d3d"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="15"/>
+            <Setter Property="Padding" Value="18 14"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.4" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.ProjectTile.working">
+            <Setter Property="Background" Value="#15191f"/>
+            <Setter Property="BorderBrush" Value="#2f5f9e"/>
+        </Style>
+
+        <Style Selector="Border.ProjectTile.succeeded">
+            <Setter Property="Background" Value="#141b16"/>
+            <Setter Property="BorderBrush" Value="#3f7a4a"/>
+        </Style>
+
+        <Style Selector="Border.ProjectTile.failed">
+            <Setter Property="Background" Value="#1e1516"/>
+            <Setter Property="BorderBrush" Value="#8a3f42"/>
+        </Style>
+
+        <!-- Breathing outline laid over the tile for as long as work is running -->
+        <Style Selector="Border.TilePulse">
+            <Style.Animations>
+                <Animation Duration="0:0:1.5" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.1"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0.85"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid>
+        <!-- Background blur effect -->
+        <Border Height="500" Margin="200 250 200 0" Opacity="0.1"
+                IsHitTestVisible="False"
+                HorizontalAlignment="Stretch" VerticalAlignment="Top">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="White" Offset="0"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Effect>
+                <BlurEffect Radius="450"/>
+            </Border.Effect>
+        </Border>
+
+        <Grid RowDefinitions="Auto,*" Margin="25 20 20 0">
+            <!-- Header. The count label keeps its line even while empty, otherwise the
+                 centred block re-centres and drags the title with it as tiles are added -->
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" MinHeight="60" Margin="0 0 0 0">
+                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                    <Image Width="40" Height="40" HorizontalAlignment="Left" Margin="0 0 0 20" Source="/Assets/Brands/Reflection.40px.png"/>
+
+                    <TextBlock FontSize="14"
+                               Opacity="0.5"
+                               Margin="0 0 0 0"
+                               MinHeight="19"
+                               Text="{Binding UnrealProjectCountLabel}"/>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        Command="{Binding AddUnrealProjectCommand}"
+                        Classes="SettingsExpander HoverLift"
+                        Height="38"
+                        Padding="14 0"
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <fluent:FluentIcon Icon="Add" FontSize="16" IconVariant="Regular" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Registered projects -->
+            <ScrollViewer Grid.Row="1">
+                <StackPanel Spacing="10" Margin="0 0 0 25">
+                    <TextBlock FontSize="14"
+                               Opacity="0.5"
+                               IsVisible="{Binding HasNoUnrealProjects}"
+                               Text="Add a Unreal Engine project to get started."/>
+
+                    <ItemsControl Margin="0 20 0 0" ItemsSource="{Binding UnrealProjects}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="10"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="plugins:UnrealProject">
+                              <Panel>
+                                <Border Classes="ProjectTile"
+                                        Classes.working="{Binding IsBusy}"
+                                        Classes.succeeded="{Binding HasSucceeded}"
+                                        Classes.failed="{Binding HasFailed}"
+                                        HorizontalAlignment="Stretch">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                        <!-- Project icon, the Unreal Engine mark unless the project ships its own -->
+                                        <Border Grid.Column="0"
+                                                Width="44"
+                                                Height="44"
+                                                CornerRadius="10"
+                                                Margin="0 0 16 0"
+                                                ClipToBounds="True"
+                                                Background="#1c1c1c">
+                                            <Panel>
+                                                <!-- Slightly oversized so the blur has pixels to bleed
+                                                     into instead of softening the rounded edge -->
+                                                <Image Source="{Binding Icon}"
+                                                       Stretch="UniformToFill"
+                                                       Margin="-3"
+                                                       RenderOptions.BitmapInterpolationMode="HighQuality"
+                                                       IsVisible="{Binding HasIcon}">
+                                                    <Image.Effect>
+                                                        <BlurEffect Radius="0.25"/>
+                                                    </Image.Effect>
+                                                </Image>
+
+                                                <material:MaterialIcon Kind="Unreal"
+                                                                       Width="24"
+                                                                       Height="24"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"
+                                                                       IsVisible="{Binding HasNoIcon}"/>
+                                            </Panel>
+                                        </Border>
+
+                                        <!-- Name, versions and build path -->
+                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <TextBlock FontSize="17"
+                                                           FontWeight="DemiBold"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding Name}"/>
+
+                                                <TextBlock FontSize="13"
+                                                           Opacity="0.65"
+                                                           VerticalAlignment="Center"
+                                                           Text="{Binding PluginVersionLabel}"/>
+
+                                                <TextBlock FontSize="13"
+                                                           Opacity="0.45"
+                                                           VerticalAlignment="Center"
+                                                           Text="{Binding EngineVersionLabel}"/>
+                                            </StackPanel>
+
+                                            <!-- The build path gives way to install progress, and to
+                                                 whatever the install finished on once it is done -->
+                                            <TextBlock FontSize="13"
+                                                       Opacity="0.4"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       IsVisible="{Binding HasNoStatus}"
+                                                       Text="{Binding FilePath}"/>
+
+                                            <TextBlock FontSize="13"
+                                                       Opacity="0.6"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       IsVisible="{Binding HasStatus}"
+                                                       Text="{Binding Status}"/>
+                                        </StackPanel>
+
+                                        <!-- Actions -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <Button Classes="SettingsExpander HoverLift"
+                                                    Width="36"
+                                                    Height="36"
+                                                    Padding="0"
+                                                    IsEnabled="{Binding IsIdle}"
+                                                    HorizontalContentAlignment="Center"
+                                                    Command="{Binding $parent[ItemsControl].((settings:PluginSettingsViewModel)DataContext).InstallPluginCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ToolTip.Tip>
+                                                    <TextBlock Text="Install the latest plugin release and compile it"/>
+                                                </ToolTip.Tip>
+
+                                                <fluent:FluentIcon Icon="ArrowDownload" FontSize="17" IconVariant="Regular"/>
+                                            </Button>
+
+                                            <Button Classes="SettingsExpander HoverLift"
+                                                    Width="36"
+                                                    Height="36"
+                                                    Padding="0"
+                                                    HorizontalContentAlignment="Center"
+                                                    Command="{Binding $parent[ItemsControl].((settings:PluginSettingsViewModel)DataContext).OpenUnrealProjectCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ToolTip.Tip>
+                                                    <TextBlock Text="Open in Unreal Engine"/>
+                                                </ToolTip.Tip>
+
+                                                <fluent:FluentIcon Icon="Open" FontSize="17" IconVariant="Regular"/>
+                                            </Button>
+
+                                            <Button Classes="SettingsExpander HoverLift RedPressedOutline"
+                                                    Width="36"
+                                                    Height="36"
+                                                    Padding="0"
+                                                    HorizontalContentAlignment="Center"
+                                                    Command="{Binding $parent[ItemsControl].((settings:PluginSettingsViewModel)DataContext).RemoveUnrealProjectCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ToolTip.Tip>
+                                                    <TextBlock Text="Remove Project"/>
+                                                </ToolTip.Tip>
+
+                                                <fluent:FluentIcon Icon="Dismiss" FontSize="17" IconVariant="Regular"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Classes="TilePulse"
+                                        IsVisible="{Binding IsBusy}"
+                                        CornerRadius="15"
+                                        BorderThickness="1"
+                                        BorderBrush="#5a9dff"
+                                        IsHitTestVisible="False"/>
+                              </Panel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</UserControl>

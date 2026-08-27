@@ -22,6 +22,7 @@ public static class AppServices
     /* Services ~~~~~~~~~~~~~~~~~~~~~ */
     public static AppService App => Services.GetRequiredService<AppService>();
     public static PluginService Plugins => Services.GetRequiredService<PluginService>();
+    public static UnrealPluginService UnrealPlugin => Services.GetRequiredService<UnrealPluginService>();
     public static TaskService Tasks => Services.GetRequiredService<TaskService>();
     public static SettingsService Settings => Services.GetRequiredService<SettingsService>();
     public static InfoService Info => Services.GetRequiredService<InfoService>();

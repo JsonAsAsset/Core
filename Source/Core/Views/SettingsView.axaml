@@ -92,20 +92,6 @@
                     </controls:NavigationViewItem.IconSource>
                 </controls:NavigationViewItem>
                 
-                <controls:NavigationViewItemHeader IsVisible="{Binding !IsOnboarding}" Content="Advanced"/>
-                
-                <controls:NavigationViewItem IsVisible="{Binding !IsOnboarding}" Content="Serialization" Tag="{x:Type views:SerializationSettingsView}">
-                    <controls:NavigationViewItem.IconSource>
-                        <fluent:FluentIconSource Icon="CodeTextEdit" IconSize="Size32" IconVariant="Regular"/>
-                    </controls:NavigationViewItem.IconSource>
-                </controls:NavigationViewItem>
-                
-                <controls:NavigationViewItem IsVisible="{Binding !IsOnboarding}" Content="Cloud" Tag="{x:Type views:CloudSettingsView}">
-                    <controls:NavigationViewItem.IconSource>
-                        <fluent:FluentIconSource Icon="Cloud" IconSize="Size32" IconVariant="Regular"/>
-                    </controls:NavigationViewItem.IconSource>
-                </controls:NavigationViewItem>
-                
                 <controls:NavigationViewItemHeader IsVisible="{Binding !IsOnboarding}" Content="Dev Tools"/>
                 
                 <controls:NavigationViewItem IsVisible="{Binding !IsOnboarding}" Content="Debug" Tag="{x:Type views:DebugSettingsView}">

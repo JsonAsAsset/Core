@@ -113,11 +113,11 @@
     <Compile Update="Views\Settings\ModelSettingsView.cs">
       <DependentUpon>ModelSettingsView.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Views\PluginView.cs">
+      <DependentUpon>PluginView.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\Settings\DebugSettingsView.cs">
       <DependentUpon>DebugSettingsView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\Settings\CloudSettingsView.cs">
-      <DependentUpon>CloudSettingsView.axaml</DependentUpon>
     </Compile>
     <Compile Update="Views\Settings\ApplicationSettingsView.cs">
       <DependentUpon>ApplicationSettingsView.axaml</DependentUpon>
@@ -199,6 +199,9 @@
     </Compile>
     <Compile Update="Windows\LinkWindow.cs">
       <DependentUpon>LinkWindow.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Windows\BuildLogWindow.cs">
+      <DependentUpon>BuildLogWindow.axaml</DependentUpon>
     </Compile>
   </ItemGroup>
 

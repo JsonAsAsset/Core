@@ -18,9 +18,9 @@ public partial class SettingsService : ObservableObject, IService
     [ObservableProperty] private UpdatesSettingsViewModel _updates = new();
     [ObservableProperty] private ConnectionsSettingsViewModel _connections = new();
     [ObservableProperty] private CloudSettingsViewModel _cloud = new();
-    [ObservableProperty] private SerializationSettingsViewModel _serialization = new();
     [ObservableProperty] private ModelSettingsViewModel _model = new();
-    
+    [ObservableProperty] private PluginSettingsViewModel _plugin = new();
+
     [ObservableProperty] private DebugSettingsViewModel _debug = new();
     
     private static readonly DirectoryInfo DirectoryPath = new(Path.Combine(

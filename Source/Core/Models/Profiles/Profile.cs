@@ -279,8 +279,8 @@ public class Profile : BaseProfileDisplay
 
         if (!Encryption.IsValid) Encryption.MainKey = EMPTY_CHAR;
         
-        Provider.ReadScriptData = Settings.Serialization.ReadBlueprintBytecode;
-        Provider.ReadShaderMaps = Settings.Serialization.ReadMaterialShaderMaps;
+        Provider.ReadScriptData = true;
+        Provider.ReadShaderMaps = true;
         Provider.ReadNaniteData = true;
 
         if (onDemandPlugin != null)

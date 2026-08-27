@@ -29,7 +29,7 @@
                 
                 Title Bar Gradient
                 -->
-                <Grid Opacity="0.5" Name="TitleBarGradient" IsVisible="True">
+                <Grid Opacity="1" Name="TitleBarGradient" IsVisible="True">
                     <Border Margin="25 0 25 0" Opacity="{Binding TitleBarOpacity}" Background="{Binding TitleBarSecondGradientBrush}" HorizontalAlignment="Stretch" Height="25">
                         <Border.Effect>
                             <BlurEffect Radius="75"/>

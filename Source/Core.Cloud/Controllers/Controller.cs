@@ -1,3 +1,4 @@
+using CUE4Parse.GameTypes.FN.Assets.Exports.DataAssets;
 using CUE4Parse_Conversion;
 using CUE4Parse_Conversion.Exporters;
 using CUE4Parse_Conversion.Options;
@@ -456,6 +457,10 @@ public partial class CloudApiController : ControllerBase
             var finalExports = new List<UObject>(exports);
 
             var mergedExports = new List<UObject>();
+
+            /* Editor-only companions that are deliberately left out rather than merged */
+            var skippedEditorExports = new List<UObject>();
+
             if (provider.TryLoadPackage(objectPath, out var editorAsset))
             {
                 foreach (var export in exports)
@@ -466,12 +471,23 @@ public partial class CloudApiController : ControllerBase
                         continue;
                     }
 
+                    /* BuildingTextureData is read straight off the cooked export, whose texture
+                     * and material references are the ones callers resolve against. Its editor
+                     * companion describes the same slots the way the editor saw them, so merging
+                     * it over the top replaces good references with editor-side ones */
+                    if (export is UBuildingTextureData)
+                    {
+                        skippedEditorExports.Add(editorData);
+                        continue;
+                    }
+
                     export.Properties.AddRange(editorData.Properties);
                     mergedExports.Add(export);
                 }
 
                 finalExports.AddRange(editorAsset.GetExports()
-                    .Where(editorExport => !mergedExports.Contains(editorExport)));
+                    .Where(editorExport => !mergedExports.Contains(editorExport))
+                    .Where(editorExport => !skippedEditorExports.Contains(editorExport)));
             }
 
             mergedExports.Clear();

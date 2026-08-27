@@ -1,0 +1,225 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:windowModels="clr-namespace:Core.WindowModels"
+    xmlns:window="clr-namespace:Core.Controls.Window"
+    xmlns:plugins="clr-namespace:Core.Models.Plugins"
+    xmlns:fluent="clr-namespace:FluentIcons.Avalonia;assembly=FluentIcons.Avalonia"
+
+    x:Class="Core.Windows.BuildLogWindow"
+    x:DataType="windowModels:BuildLogWindowModel"
+
+    Title="Build Log"
+
+    Width="1000" Height="660"
+    MinWidth="680" MinHeight="420"
+
+    mc:Ignorable="d"
+    d:DesignWidth="1000"
+    d:DesignHeight="660">
+
+    <Window.Styles>
+        <!-- One console row. Colour is the only thing that varies between kinds -->
+        <Style Selector="TextBlock.LogText">
+            <Setter Property="FontFamily" Value="Cascadia Mono,JetBrains Mono,Consolas,Menlo,monospace"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="Foreground" Value="#c8ccd2"/>
+        </Style>
+
+        <Style Selector="TextBlock.LogText.progress">
+            <Setter Property="Foreground" Value="#9aa4b2"/>
+        </Style>
+
+        <Style Selector="TextBlock.LogText.notice">
+            <Setter Property="Foreground" Value="#6f7885"/>
+        </Style>
+
+        <Style Selector="TextBlock.LogText.warning">
+            <Setter Property="Foreground" Value="#e0b341"/>
+        </Style>
+
+        <Style Selector="TextBlock.LogText.error">
+            <Setter Property="Foreground" Value="#ef6c6c"/>
+        </Style>
+
+        <Style Selector="TextBlock.LogText.success">
+            <Setter Property="Foreground" Value="#5fcf80"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- The [n/total] gutter, kept quiet so the file names read first -->
+        <Style Selector="TextBlock.LogCounter">
+            <Setter Property="FontFamily" Value="Cascadia Mono,JetBrains Mono,Consolas,Menlo,monospace"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#5b6472"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="Width" Value="62"/>
+            <Setter Property="Margin" Value="0 0 14 0"/>
+        </Style>
+
+        <Style Selector="Border.StatePill">
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Padding" Value="12 5"/>
+            <Setter Property="Background" Value="#22262c"/>
+            <Setter Property="BorderBrush" Value="#3a4049"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.35" Easing="CubicEaseOut"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.35" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="Border.StatePill.working">
+            <Setter Property="Background" Value="#16233a"/>
+            <Setter Property="BorderBrush" Value="#2f5f9e"/>
+        </Style>
+
+        <Style Selector="Border.StatePill.succeeded">
+            <Setter Property="Background" Value="#152417"/>
+            <Setter Property="BorderBrush" Value="#3f7a4a"/>
+        </Style>
+
+        <Style Selector="Border.StatePill.failed">
+            <Setter Property="Background" Value="#251617"/>
+            <Setter Property="BorderBrush" Value="#8a3f42"/>
+        </Style>
+
+        <!-- Breathing dot, the window's own sign that work is still running -->
+        <Style Selector="Ellipse.LiveDot">
+            <Style.Animations>
+                <Animation Duration="0:0:1.2" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.25"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1.0"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <Style Selector="ListBox.LogList ListBoxItem">
+            <Setter Property="Padding" Value="18 1"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="{Binding $parent[Window].OffScreenMargin}">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+            <Grid Height="{DynamicResource TitleBarHeight}" Grid.Row="0" IsHitTestVisible="False"/>
+
+            <Grid Grid.Row="1" Background="{DynamicResource BackgroundBrush}">
+                <window:BaseTitleBar VerticalAlignment="Top" Height="{DynamicResource TitleBarHeight}" Margin="{DynamicResource TitleBarNegativeTopMargin}"/>
+            </Grid>
+
+            <!-- Header -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="32 0 32 18">
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="{Binding Project.Name}" FontSize="24" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding Subtitle}" FontSize="13" Opacity="0.5"/>
+                </StackPanel>
+
+                <Border Grid.Column="1"
+                        Classes="StatePill"
+                        Classes.working="{Binding Project.IsBusy}"
+                        Classes.succeeded="{Binding Project.HasSucceeded}"
+                        Classes.failed="{Binding Project.HasFailed}">
+                    <StackPanel Orientation="Horizontal" Spacing="9" VerticalAlignment="Center">
+                        <Ellipse Classes="LiveDot"
+                                 Width="8" Height="8"
+                                 Fill="#5a9dff"
+                                 VerticalAlignment="Center"
+                                 IsVisible="{Binding Project.IsBusy}"/>
+
+                        <TextBlock Text="{Binding Project.Status}"
+                                   FontSize="13"
+                                   MaxWidth="420"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- Console -->
+            <Border Grid.Row="3"
+                    Margin="32 0 32 0"
+                    CornerRadius="12"
+                    Background="#0f1114"
+                    BorderBrush="#262b31"
+                    BorderThickness="1"
+                    ClipToBounds="True">
+                <Panel>
+                    <ListBox x:Name="LogList"
+                             Classes="LogList"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0 10"
+                             SelectionMode="Multiple"
+                             ItemsSource="{Binding Project.BuildLog}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="plugins:BuildLogLine">
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <TextBlock Grid.Column="0"
+                                               Classes="LogCounter"
+                                               IsVisible="{Binding HasCounter}"
+                                               Text="{Binding Counter}"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Classes="LogText"
+                                               Classes.progress="{Binding IsProgress}"
+                                               Classes.notice="{Binding IsNotice}"
+                                               Classes.warning="{Binding IsWarning}"
+                                               Classes.error="{Binding IsError}"
+                                               Classes.success="{Binding IsSuccess}"
+                                               Text="{Binding Text}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <TextBlock Text="Nothing has been built yet."
+                               FontSize="13"
+                               Opacity="0.35"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !Project.HasBuildLog}"/>
+                </Panel>
+            </Border>
+
+            <!-- Footer -->
+            <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" Margin="32 18 32 24">
+                <CheckBox Grid.Column="0"
+                          Content="Follow output"
+                          FontSize="13"
+                          Cursor="Hand"
+                          IsChecked="{Binding AutoScroll}"/>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                    <Button Classes="SettingsExpander HoverLift"
+                            Height="36"
+                            Padding="14 0"
+                            Click="CopyLog">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <fluent:FluentIcon Icon="Copy" FontSize="15" IconVariant="Regular" VerticalAlignment="Center"/>
+                            <TextBlock Text="Copy" FontSize="13" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button Classes="SettingsExpander HoverLift"
+                            Height="36"
+                            Padding="18 0"
+                            Click="CloseWindow">
+                        <TextBlock Text="Close" FontSize="13" VerticalAlignment="Center"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

@@ -30,9 +30,19 @@ public partial class CloudApiController
         "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/AssaultRifle/AR_NonTargeted_Pose_CMM", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_AssaultRifle_NonTargeted"
     ];
     
+    private static readonly string[] AR_Hip_NonTargeted =
+    [
+        "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_AssaultRifle_HipNonTargeted"
+    ];
+    
     private static readonly string[] AR_Targeted =
     [
         "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/M_AssaultRifle_Targeted"
+    ];
+    
+    private static readonly string[] Launcher =
+    [
+        "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/Launcher_CMM"
     ];
     
     private static readonly string[] Rifle =
@@ -75,6 +85,7 @@ public partial class CloudApiController
         new("Pistol_NonTargeted_*", Pistol),
         new("Pistol_Zapper_Fire_*", Pistol),
         new("PistolAuto_Fire", Pistol),
+        new("Pistol_Revolver_Fire_CMM", Pistol),
         new("Pistol_GripClipLong_Fire_*", Pistol),
         new("M_AO_Pistol_Downsights*", Pistol_Targeted),
 
@@ -91,6 +102,8 @@ public partial class CloudApiController
         new("TacticalShotgun02_NonTargeted_*", "FortniteGame/Content/Animation/Game/MainPlayer/Poses/Medium/Male/TacticalShotgun02/TacticalShotgun02_NonTargeted_CMM"),
         
         new("Sprint_Lean_*", "FortniteGame/Content/Animation/Game/MainPlayer/Locomotion/Medium/Male/Sprint/Sprint_Default"),
+        
+        new("RPG_Fire_GuidedMissile_*", Launcher),
         
         /* AR */
         new("AR_NonTargeted_*", AR_NonTargeted),

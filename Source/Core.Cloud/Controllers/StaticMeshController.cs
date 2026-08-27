@@ -1,6 +1,10 @@
-using CUE4Parse.UE4.Assets.Exports.StaticMesh;
+﻿using CUE4Parse.UE4.Assets.Exports.StaticMesh;
 using CUE4Parse.UE4.Objects.Core.Math;
+using CUE4Parse.UE4.Objects.Engine;
 using CUE4Parse.Utils;
+
+using CUE4Parse_Conversion.Dto;
+using CUE4Parse_Conversion.Options;
 
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +24,9 @@ public partial class CloudApiController
     /* Flat parallel arrays, one entry per cooked vertex */
     private sealed record StaticVertices(int Count, int NumTexCoords, float[] Positions, float[] Normals, float[] Tangents, float[] Signs, float[] UVs, uint[] Colors);
 
-    private sealed record StaticLod(int Index, float ScreenSize, uint[] Indices, List<StaticSection> Sections, StaticVertices Vertices);
+    /* Nanite says the geometry came out of the cluster stream rather than off a cooked LOD, so the
+     * far end knows whether it is holding the mesh or the fallback */
+    private sealed record StaticLod(int Index, float ScreenSize, uint[] Indices, List<StaticSection> Sections, StaticVertices Vertices, bool Nanite = false);
 
     /* Slot name and the material it points at, so the importer can rebuild the slots in order */
     private sealed record StaticSlot(string SlotName, string ImportedSlotName, string? Material);
@@ -66,6 +72,28 @@ public partial class CloudApiController
             if (BuildStaticLod(renderData.LODs[lodIndex], lodIndex, screenSize) is { } lod)
             {
                 lods.Add(lod);
+            }
+        }
+
+        /* The geometry a Nanite mesh actually is.
+         *
+         * A Nanite mesh keeps what it draws in a stream of clusters, and what it keeps beside that
+         * as an ordinary LOD is the fallback -- a cut-down mesh, for where Nanite will not draw.
+         * Read off the LODs alone, a Nanite mesh comes back as its own fallback and the mesh
+         * somebody modelled is left in the stream.
+         *
+         * The stream is readable: it is clusters of vertices and triangles, and put back together
+         * they are the mesh. So it is read and handed over first, and the fallback follows it. */
+        if (renderData.NaniteResources is { PageStreamingStates.Length: > 0 })
+        {
+            if (BuildNaniteLod(staticMesh) is { } nanite)
+            {
+                for (var index = 0; index < lods.Count; index++)
+                {
+                    lods[index] = lods[index] with { Index = index + 1 };
+                }
+
+                lods.Insert(0, nanite);
             }
         }
 
@@ -163,5 +191,100 @@ public partial class CloudApiController
         }
 
         return new StaticLod(lodIndex, screenSize, indices, sections, new StaticVertices(count, numTexCoords, positions, normals, tangents, signs, uvs, vertexColors));
+    }
+
+    /* Read back out of the cluster stream, as the one LOD it makes */
+    private static StaticLod? BuildNaniteLod(UStaticMesh staticMesh)
+    {
+        MeshLodDto<MeshVertex>? read;
+
+        try
+        {
+            /* Only the Nanite, since the LODs beside it have been read already */
+            var whole = new StaticMeshDto(staticMesh, EMeshQuality.All, ENaniteMeshFormat.NaniteOnly);
+
+            read = whole.LODs.FirstOrDefault(one => one.IsNanite);
+        }
+        catch (Exception)
+        {
+            /* A stream this build cannot read is not worth taking the mesh down over: the fallback
+             * is still there, and comes back as it did before */
+            return null;
+        }
+
+        if (read is not { Vertices.Length: > 0, Indices.Length: > 0 }) return null;
+
+        var count = read.Vertices.Length;
+
+        /* However many the clusters carried, and never none */
+        var numTexCoords = Math.Max(read.ExtraUvs.Length > 0 ? read.ExtraUvs.Length + 1 : 1, 1);
+
+        var positions = new float[count * 3];
+        var normals = new float[count * 3];
+        var tangents = new float[count * 3];
+        var signs = new float[count];
+        var uvs = new float[count * numTexCoords * 2];
+        var colors = new uint[count];
+
+        for (var index = 0; index < count; index++)
+        {
+            var vertex = read.Vertices[index];
+
+            positions[index * 3 + 0] = (float)vertex.Position.X;
+            positions[index * 3 + 1] = (float)vertex.Position.Y;
+            positions[index * 3 + 2] = (float)vertex.Position.Z;
+
+            normals[index * 3 + 0] = (float)vertex.Normal.X;
+            normals[index * 3 + 1] = (float)vertex.Normal.Y;
+            normals[index * 3 + 2] = (float)vertex.Normal.Z;
+
+            tangents[index * 3 + 0] = (float)vertex.Tangent.X;
+            tangents[index * 3 + 1] = (float)vertex.Tangent.Y;
+            tangents[index * 3 + 2] = (float)vertex.Tangent.Z;
+
+            /* Sign carries the bitangent handedness, which is lost if only the two vectors travel */
+            signs[index] = vertex.Tangent.W < 0 ? -1.0f : 1.0f;
+
+            uvs[index * numTexCoords * 2 + 0] = vertex.Uv.U;
+            uvs[index * numTexCoords * 2 + 1] = vertex.Uv.V;
+
+            /* The rest of them are kept apart from the vertex, one array to a channel */
+            for (var channel = 1; channel < numTexCoords && channel - 1 < read.ExtraUvs.Length; channel++)
+            {
+                var held = read.ExtraUvs[channel - 1];
+
+                if (index >= held.Length) continue;
+
+                uvs[(index * numTexCoords + channel) * 2 + 0] = held[index].U;
+                uvs[(index * numTexCoords + channel) * 2 + 1] = held[index].V;
+            }
+
+            /* Packed RGBA, unpacked by component at the other end */
+            var color = read.VertexColors is { Length: > 0 } held2 && index < held2[0].Colors.Length
+                ? held2[0].Colors[index]
+                : new FColor(255, 255, 255, 255);
+
+            colors[index] = ((uint)color.R << 24) | ((uint)color.G << 16) | ((uint)color.B << 8) | color.A;
+        }
+
+        var sections = new List<StaticSection>(read.Sections.Length);
+
+        foreach (var section in read.Sections)
+        {
+            if (!section.IsValid) continue;
+
+            sections.Add(new StaticSection(
+                section.MaterialIndex,
+                section.FirstIndex,
+                section.NumFaces,
+                0,
+                count - 1,
+                true,
+                section.CastShadow));
+        }
+
+        if (sections.Count == 0) return null;
+
+        return new StaticLod(0, 1.0f, read.Indices, sections, new StaticVertices(count, numTexCoords, positions, normals, tangents, signs, uvs, colors), true);
     }
 }
