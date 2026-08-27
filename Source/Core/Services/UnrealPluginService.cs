@@ -123,6 +123,15 @@ public class UnrealPluginService : IService
                 return false;
             }
 
+            /* A checkout is someone's working copy, uncommitted changes and all, and
+             * replacing the folder wholesale would take the repository with it */
+            if (Directory.Exists(Path.Combine(target, ".git")))
+            {
+                Report(project, $"{target} is a git checkout, so it is left alone. Move it aside to install a release there.");
+
+                return false;
+            }
+
             /* Checked before anything is removed: a recursive delete that trips over a
              * locked binary halfway through leaves the existing install destroyed */
             if (FindLockedFile(target) is { } locked)
@@ -255,15 +264,34 @@ public class UnrealPluginService : IService
             }
             catch (IOException)
             {
+                /* Held by another process, which is the editor keeping the plugin loaded */
                 return file;
             }
             catch (UnauthorizedAccessException)
             {
-                return file;
+                /* Read-only rather than held, which is how git stores its objects. It still
+                 * stops the delete, so the attribute is cleared instead of failing the install */
+                TryClearReadOnly(file);
             }
         }
 
         return null;
+    }
+
+    private static void TryClearReadOnly(string file)
+    {
+        try
+        {
+            var attributes = File.GetAttributes(file);
+
+            if (!attributes.HasFlag(FileAttributes.ReadOnly)) return;
+
+            File.SetAttributes(file, attributes & ~FileAttributes.ReadOnly);
+        }
+        catch (Exception e)
+        {
+            Log.Warning($"Could not clear the read-only attribute on {file}: {e.Message}");
+        }
     }
 
     /* The editor target is the one the plugin's editor modules get compiled into */

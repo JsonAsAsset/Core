@@ -18,17 +18,22 @@
     <UserControl.Styles>
         <!-- Colour carries the install state, and eases between them rather than snapping -->
         <Style Selector="Border.ProjectTile">
-            <Setter Property="Background" Value="#1a1a1a"/>
-            <Setter Property="BorderBrush" Value="#3d3d3d"/>
+            <Setter Property="Background" Value="#171719"/>
+            <Setter Property="BorderBrush" Value="#2b2b2f"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="15"/>
-            <Setter Property="Padding" Value="18 14"/>
+            <Setter Property="Padding" Value="16"/>
             <Setter Property="Transitions">
                 <Transitions>
                     <BrushTransition Property="Background" Duration="0:0:0.4" Easing="CubicEaseOut"/>
                     <BrushTransition Property="BorderBrush" Duration="0:0:0.4" Easing="CubicEaseOut"/>
                 </Transitions>
             </Setter>
+        </Style>
+
+        <Style Selector="Border.ProjectTile:pointerover">
+            <Setter Property="Background" Value="#1c1c1f"/>
+            <Setter Property="BorderBrush" Value="#3a3a40"/>
         </Style>
 
         <Style Selector="Border.ProjectTile.working">
@@ -58,6 +63,44 @@
                     </KeyFrame>
                 </Animation>
             </Style.Animations>
+        </Style>
+
+        <!-- Version badges. Loose text spans read as a run-on line, a bordered
+             chip reads as a value, which is what these are -->
+        <Style Selector="Border.Pill">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="8 3"/>
+            <Setter Property="Background" Value="#1f1f23"/>
+            <Setter Property="BorderBrush" Value="#313138"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <Style Selector="Border.Pill > TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="#9ea5ae"/>
+        </Style>
+
+        <Style Selector="Border.Pill.installed">
+            <Setter Property="Background" Value="#15241a"/>
+            <Setter Property="BorderBrush" Value="#2d5738"/>
+        </Style>
+
+        <Style Selector="Border.Pill.installed > TextBlock">
+            <Setter Property="Foreground" Value="#79cf90"/>
+        </Style>
+
+        <!-- Action cluster, so three separate buttons read as one control -->
+        <Style Selector="Button.TileAction">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="#202024"/>
+            <Setter Property="BorderBrush" Value="#313138"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </UserControl.Styles>
 
@@ -128,12 +171,13 @@
                                     <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                                         <!-- Project icon, the Unreal Engine mark unless the project ships its own -->
                                         <Border Grid.Column="0"
-                                                Width="44"
-                                                Height="44"
-                                                CornerRadius="10"
-                                                Margin="0 0 16 0"
+                                                Width="52"
+                                                Height="52"
+                                                CornerRadius="12"
+                                                Margin="0 0 18 0"
                                                 ClipToBounds="True"
-                                                Background="#1c1c1c">
+                                                Background="#1c1c1c"
+                                                VerticalAlignment="Center">
                                             <Panel>
                                                 <!-- Slightly oversized so the blur has pixels to bleed
                                                      into instead of softening the rounded edge -->
@@ -148,57 +192,50 @@
                                                 </Image>
 
                                                 <material:MaterialIcon Kind="Unreal"
-                                                                       Width="24"
-                                                                       Height="24"
+                                                                       Width="26"
+                                                                       Height="26"
                                                                        HorizontalAlignment="Center"
                                                                        VerticalAlignment="Center"
                                                                        IsVisible="{Binding HasNoIcon}"/>
                                             </Panel>
                                         </Border>
 
-                                        <!-- Name, versions and build path -->
-                                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                                <TextBlock FontSize="17"
-                                                           FontWeight="DemiBold"
-                                                           VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Text="{Binding Name}"/>
+                                        <!-- Name, version badges, then the build path -->
+                                        <StackPanel Grid.Column="1" Spacing="7" VerticalAlignment="Center">
+                                            <TextBlock FontSize="17"
+                                                       FontWeight="DemiBold"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Text="{Binding Name}"/>
 
-                                                <TextBlock FontSize="13"
-                                                           Opacity="0.65"
-                                                           VerticalAlignment="Center"
-                                                           Text="{Binding PluginVersionLabel}"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <Border Classes="Pill" Classes.installed="{Binding IsPluginInstalled}">
+                                                    <TextBlock Text="{Binding PluginVersionLabel}"/>
+                                                </Border>
 
-                                                <TextBlock FontSize="13"
-                                                           Opacity="0.45"
-                                                           VerticalAlignment="Center"
-                                                           Text="{Binding EngineVersionLabel}"/>
+                                                <Border Classes="Pill">
+                                                    <TextBlock Text="{Binding EngineVersionLabel}"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <!-- The build path gives way to install progress, and to
                                                  whatever the install finished on once it is done -->
-                                            <TextBlock FontSize="13"
-                                                       Opacity="0.4"
+                                            <TextBlock FontSize="12.5"
+                                                       Opacity="0.35"
                                                        TextTrimming="CharacterEllipsis"
                                                        IsVisible="{Binding HasNoStatus}"
                                                        Text="{Binding FilePath}"/>
 
-                                            <TextBlock FontSize="13"
-                                                       Opacity="0.6"
+                                            <TextBlock FontSize="12.5"
+                                                       Opacity="0.65"
                                                        TextTrimming="CharacterEllipsis"
                                                        IsVisible="{Binding HasStatus}"
                                                        Text="{Binding Status}"/>
                                         </StackPanel>
 
                                         <!-- Actions -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                            <Button Classes="SettingsExpander HoverLift"
-                                                    Width="36"
-                                                    Height="36"
-                                                    Padding="0"
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="18 0 0 0">
+                                            <Button Classes="SettingsExpander HoverLift TileAction"
                                                     IsEnabled="{Binding IsIdle}"
-                                                    HorizontalContentAlignment="Center"
                                                     Command="{Binding $parent[ItemsControl].((settings:PluginSettingsViewModel)DataContext).InstallPluginCommand}"
                                                     CommandParameter="{Binding}">
                                                 <ToolTip.Tip>
@@ -208,11 +245,17 @@
                                                 <fluent:FluentIcon Icon="ArrowDownload" FontSize="17" IconVariant="Regular"/>
                                             </Button>
 
-                                            <Button Classes="SettingsExpander HoverLift"
-                                                    Width="36"
-                                                    Height="36"
-                                                    Padding="0"
-                                                    HorizontalContentAlignment="Center"
+                                            <Button Classes="SettingsExpander HoverLift TileAction"
+                                                    Command="{Binding $parent[ItemsControl].((settings:PluginSettingsViewModel)DataContext).OpenBuildLogCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <ToolTip.Tip>
+                                                    <TextBlock Text="Open the build log"/>
+                                                </ToolTip.Tip>
+
+                                                <fluent:FluentIcon Icon="WindowConsole" FontSize="17" IconVariant="Regular"/>
+                                            </Button>
+
+                                            <Button Classes="SettingsExpander HoverLift TileAction"
                                                     Command="{Binding $parent[ItemsControl].((settings:PluginSettingsViewModel)DataContext).OpenUnrealProjectCommand}"
                                                     CommandParameter="{Binding}">
                                                 <ToolTip.Tip>
@@ -222,11 +265,8 @@
                                                 <fluent:FluentIcon Icon="Open" FontSize="17" IconVariant="Regular"/>
                                             </Button>
 
-                                            <Button Classes="SettingsExpander HoverLift RedPressedOutline"
-                                                    Width="36"
-                                                    Height="36"
-                                                    Padding="0"
-                                                    HorizontalContentAlignment="Center"
+                                            <Button Classes="SettingsExpander HoverLift RedPressedOutline TileAction"
+                                                    Margin="6 0 0 0"
                                                     Command="{Binding $parent[ItemsControl].((settings:PluginSettingsViewModel)DataContext).RemoveUnrealProjectCommand}"
                                                     CommandParameter="{Binding}">
                                                 <ToolTip.Tip>

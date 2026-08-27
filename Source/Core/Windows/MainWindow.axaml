@@ -52,10 +52,10 @@
                         <fluent:SymbolIcon Symbol="Home" IconVariant="Filled" FontSize="20" />
                     </controls:NavigationViewItem>
                     
-                    <controls:NavigationViewItemSeparator Margin="0 5" CornerRadius="15"/>
+                    <controls:NavigationViewItemSeparator IsVisible="False" Margin="0 5" CornerRadius="15"/>
 
                     <!-- Plugin -->
-                    <controls:NavigationViewItem Height="56" Focusable="False" ToolTip.Tip="Plugin" Tag="{x:Type views:PluginView}">
+                    <controls:NavigationViewItem Height="56" IsVisible="False" Focusable="False" ToolTip.Tip="Plugin" Tag="{x:Type views:PluginView}">
                         <Image Width="20" Height="20" Source="/Assets/Brands/Reflection.40px.png"/>
                     </controls:NavigationViewItem>
                 </controls:NavigationView.MenuItems>
@@ -63,10 +63,6 @@
                 <controls:NavigationView.FooterMenuItems>
                     <!-- Profiles -->
                     <controls:NavigationViewItem Height="56" Focusable="False" ToolTip.Tip="Profiles" Tag="{x:Type profiles:ProfileSelectionView}">
-                        <controls:NavigationViewItem.InfoBadge>
-                            <controls:InfoBadge Background="{DynamicResource Accent}" Margin="0 5 4 0" Height="6" Width="6" Padding="0 0 0 0" IsVisible="{Binding !DoesProfileExist}" />
-                        </controls:NavigationViewItem.InfoBadge>
-                        
                         <fluent:SymbolIcon Width="20" Symbol="Person"/>
                     </controls:NavigationViewItem>
                     
