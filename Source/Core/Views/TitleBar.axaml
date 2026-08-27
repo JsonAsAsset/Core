@@ -137,7 +137,7 @@
             <!-- Content Control depending on what tab is open -->
             <ContentControl ClipToBounds="False" Content="{Binding CurrentToolbarContent}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
             
-            <StackPanel Orientation="Horizontal" Spacing="10" ClipToBounds="False">
+            <StackPanel IsVisible="False" Orientation="Horizontal" Spacing="10" ClipToBounds="False">
                 <!-- Cloud -->
                 <Button Name="Cloud" ClipToBounds="False" IsVisible="{Binding IsAPIServiceEnabled}" Height="40" Background="Transparent" CornerRadius="8" Classes="HoverLift">
                     <ToolTip.Tip>

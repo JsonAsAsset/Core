@@ -48,21 +48,21 @@
 
                 <controls:NavigationView.MenuItems>
                     <!-- Home -->
-                    <controls:NavigationViewItem Height="40" Focusable="False" ToolTip.Tip="Home" Tag="{x:Type views:HomeView}" IsSelected="True">
+                    <controls:NavigationViewItem Height="56" Focusable="False" ToolTip.Tip="Home" Tag="{x:Type views:HomeView}" IsSelected="True">
                         <fluent:SymbolIcon Symbol="Home" IconVariant="Filled" FontSize="20" />
                     </controls:NavigationViewItem>
                     
                     <controls:NavigationViewItemSeparator Margin="0 5" CornerRadius="15"/>
 
                     <!-- Plugin -->
-                    <controls:NavigationViewItem Height="40" Focusable="False" ToolTip.Tip="Plugin" Tag="{x:Type views:PluginView}">
+                    <controls:NavigationViewItem Height="56" Focusable="False" ToolTip.Tip="Plugin" Tag="{x:Type views:PluginView}">
                         <Image Width="20" Height="20" Source="/Assets/Brands/Reflection.40px.png"/>
                     </controls:NavigationViewItem>
                 </controls:NavigationView.MenuItems>
 
                 <controls:NavigationView.FooterMenuItems>
                     <!-- Profiles -->
-                    <controls:NavigationViewItem Height="40" Focusable="False" ToolTip.Tip="Profiles" Tag="{x:Type profiles:ProfileSelectionView}">
+                    <controls:NavigationViewItem Height="56" Focusable="False" ToolTip.Tip="Profiles" Tag="{x:Type profiles:ProfileSelectionView}">
                         <controls:NavigationViewItem.InfoBadge>
                             <controls:InfoBadge Background="{DynamicResource Accent}" Margin="0 5 4 0" Height="6" Width="6" Padding="0 0 0 0" IsVisible="{Binding !DoesProfileExist}" />
                         </controls:NavigationViewItem.InfoBadge>
@@ -73,7 +73,7 @@
                     <controls:NavigationViewItemSeparator Margin="0 5" CornerRadius="15"/>
                     
                     <!-- Settings -->
-                    <controls:NavigationViewItem Height="40" Focusable="False" ToolTip.Tip="Settings" Tag="{x:Type views:SettingsView}">
+                    <controls:NavigationViewItem Height="56" Focusable="False" ToolTip.Tip="Settings" Tag="{x:Type views:SettingsView}">
                         <fluent:FluentIcon Width="18" Icon="Settings" Margin="0 0 2 0" />
                     </controls:NavigationViewItem>
                 </controls:NavigationView.FooterMenuItems>

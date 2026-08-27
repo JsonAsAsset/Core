@@ -71,19 +71,24 @@ public partial class HomeView : ViewBase<HomeViewModel>
         AppService.OpenLink(DONATE_LINK);
         Donate_OnPointerPressed(sender);
     }
+    
+    private void OpenReflection(object? sender, RoutedEventArgs e)
+    {
+        AppService.OpenLink("https://github.com/JsonAsAsset/Reflection");
+    }
 
     private void GetStarted(object? sender, RoutedEventArgs e)
     {
         Navigation.App.Open(typeof(ProfileSelectionView));
     }
 
-    static bool IsHeartAnimationPlaying;
+    static bool IsStarAnimationPlaying;
     
     private async void Donate_OnPointerPressed(object? sender)
     {
-        if (IsHeartAnimationPlaying) return;
+        if (IsStarAnimationPlaying) return;
         
-        if (HeartScale?.RenderTransform is not ScaleTransform heartTransform)
+        if (StarScale?.RenderTransform is not ScaleTransform StarTransform)
         {
             return;
         }
@@ -93,14 +98,14 @@ public partial class HomeView : ViewBase<HomeViewModel>
         const double durationMs = 400;
         const int stepMs = 6;
         
-        HeartScale.Opacity = 1.0;
+        StarScale.Opacity = 1.0;
 
-        var startOpacity = HeartScale.Opacity;
+        var startOpacity = StarScale.Opacity;
         const double endOpacity = 0.0;
 
         double elapsed = 0;
         
-        IsHeartAnimationPlaying = true;
+        IsStarAnimationPlaying = true;
 
         while (elapsed < durationMs)
         {
@@ -110,21 +115,21 @@ public partial class HomeView : ViewBase<HomeViewModel>
             var currentScale = startScale + (endScale - startScale) * eased;
             var currentOpacity = startOpacity + (endOpacity - startOpacity) * eased;
 
-            heartTransform.ScaleX = currentScale;
-            heartTransform.ScaleY = currentScale;
-            HeartScale.Opacity = currentOpacity;
+            StarTransform.ScaleX = currentScale;
+            StarTransform.ScaleY = currentScale;
+            StarScale.Opacity = currentOpacity;
 
             await Task.Delay(stepMs);
             
             elapsed += stepMs;
         }
 
-        heartTransform.ScaleX = 1.0;
-        heartTransform.ScaleY = 1.0;
+        StarTransform.ScaleX = 1.0;
+        StarTransform.ScaleY = 1.0;
         
-        HeartScale.Opacity = 0.0;
+        StarScale.Opacity = 0.0;
         
-        IsHeartAnimationPlaying = false;
+        IsStarAnimationPlaying = false;
     }
 
     private void Donate_OnPointerEntered(object? sender, PointerEventArgs e)
@@ -192,6 +197,14 @@ public partial class HomeView : ViewBase<HomeViewModel>
         }
     }
 
+    private static readonly string[] ReadyPrompts =
+    [
+        "you're all set!",
+        "look at you go!",
+        "we're so back.",
+        "準備ができました！"
+    ];
+    
     private void UpdatePrompt()
     {
         TagLineContainer.IsVisible = MainWM.CurrentProfile is not null;
@@ -201,7 +214,7 @@ public partial class HomeView : ViewBase<HomeViewModel>
         {
             if (MainWM.CurrentProfile.IsInitialized)
             {
-                Prompt.Text = "you're all set!";
+                Prompt.Text = ReadyPrompts[Random.Shared.Next(ReadyPrompts.Length)];
             }
             else
             {
@@ -210,7 +223,7 @@ public partial class HomeView : ViewBase<HomeViewModel>
         }
         else
         {
-            Prompt.Text = "Start a Profile.";
+            Prompt.Text = "start a profile!";
         }
     }
 

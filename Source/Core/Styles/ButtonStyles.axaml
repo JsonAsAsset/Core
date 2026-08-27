@@ -154,6 +154,10 @@
         <Setter Property="BorderBrush" Value="#ff1c68" />
     </Style>
     
+    <Style Selector="Button.GoldPressedOutline:pressed">
+        <Setter Property="BorderBrush" Value="#ffdd26" />
+    </Style>
+
     <Style Selector="Button.GlassDarkerInteraction:pointerover">
         <Setter Property="Background" Value="#1a1a1a" />
     </Style>

@@ -24,7 +24,7 @@
     <Grid>
         <Grid Background="Transparent">
             <!-- Background blur effect -->
-            <Border Height="100" Margin="200 0 200 0" Opacity="0.6"
+            <Border Height="120" Margin="200 0 200 0" Opacity="0.5"
                     HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
@@ -57,7 +57,7 @@
                     
                     <!-- Fixed container for tagline text to prevent layout shifts -->
                     <TextBlock Name="Prompt" LineSpacing="0" FontWeight="Bold" LetterSpacing="-1" HorizontalAlignment="Center" FontSize="100" Foreground="#f5f5f5">
-                        Start a Profile.
+                        start a profile!
                     </TextBlock>
                     
                     <!-- Fixed container for tagline text to prevent layout shifts -->
@@ -96,7 +96,7 @@
                                 HorizontalContentAlignment="Center"
                                 VerticalContentAlignment="Center">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock FontWeight="Bold" FontSize="19">Start a Profile</TextBlock>
+                                <TextBlock FontWeight="Bold" FontSize="19">start a profile!</TextBlock>
                             </StackPanel>
                         </Button>
                     </StackPanel>
@@ -105,7 +105,7 @@
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Spacing="15" Margin="0 30 0 0">
                         <!-- Donate button -->
                         <Grid>
-                            <Border Margin="-35 0 -35 0" Opacity="0.65" Background="#ff1c68" Width="150" Height="30">
+                            <Border Margin="-35 0 -35 0" Opacity="0.0" Background="#ffdd26" Width="250" Height="30">
                                 <Border.Effect>
                                     <BlurEffect Radius="70"/>
                                 </Border.Effect>
@@ -114,6 +114,7 @@
                             <Button Click="OpenKoFi" ToolTip.Tip="Support the project and help keep development going ❤️"
                                     ClipToBounds="False"
                                     CornerRadius="15"
+                                    IsVisible="False"
                                     Cursor="Hand" HorizontalAlignment="Stretch" Padding="20 0" Height="43"
                                     Classes="Glass WhiteOutline RedPressedOutline HoverLift" HorizontalContentAlignment="Center"
                                     PointerEntered="Donate_OnPointerEntered"
@@ -144,6 +145,32 @@
                                     </Grid>
                                     
                                     <TextBlock Foreground="White" FontWeight="DemiBold" FontSize="19" ZIndex="-1">support us!</TextBlock>
+                                </StackPanel>
+                            </Button>
+                            
+                            <Button Click="OpenReflection" ToolTip.Tip="Support the project and help keep development going ❤️"
+                                    ClipToBounds="False"
+                                    CornerRadius="15"
+                                    Cursor="Hand" HorizontalAlignment="Stretch" Padding="20 0" Height="43"
+                                    Classes="Glass WhiteOutline GoldPressedOutline HoverLift" HorizontalContentAlignment="Center"
+                                    PointerEntered="Donate_OnPointerEntered"
+                                    VerticalContentAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="16">
+                                    <Grid>
+                                        <Viewbox Width="35" Height="22" Stretch="Uniform">
+                                            <avalonia:MaterialIcon Foreground="#ffdd26" Kind="Star"></avalonia:MaterialIcon>
+                                        </Viewbox>
+                                        
+                                        <Viewbox Width="22" Name="StarScale" Opacity="0" Margin="0 -20 0 0" Height="22" Stretch="Uniform" ZIndex="1" IsHitTestVisible="False">
+                                            <Viewbox.RenderTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                                            </Viewbox.RenderTransform>
+                                            
+                                            <avalonia:MaterialIcon Foreground="#ffdd26" Kind="Star"></avalonia:MaterialIcon>
+                                        </Viewbox>
+                                    </Grid>
+                                    
+                                    <TextBlock Foreground="White" FontWeight="DemiBold" FontSize="19" ZIndex="-1">star our repo ;)</TextBlock>
                                 </StackPanel>
                             </Button>
                         </Grid>
