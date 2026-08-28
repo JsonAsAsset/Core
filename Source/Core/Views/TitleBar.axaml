@@ -38,7 +38,7 @@
                 </Grid>
                 
                 <!-- Profile Button -->
-                <Button Click="EditProfile" Classes="SoftHoverLift" ClipToBounds="False" Name="Profile" Opacity="{Binding ProfileButtonOpacity}" BorderThickness="0" Padding="10 5 10 5" Background="Transparent" CornerRadius="25">
+                <Button Click="EditProfile" Classes="SoftHoverLift" ClipToBounds="False" Name="Profile" Opacity="{Binding ProfileButtonOpacity}" BorderThickness="0" Padding="10 0 10 0" Background="Transparent" CornerRadius="25">
                     <Button.Resources>
                         <ResourceDictionary>
                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver">Transparent</SolidColorBrush>
@@ -47,19 +47,19 @@
                     </Button.Resources>
                     
                     <StackPanel Orientation="Horizontal" Spacing="12" Background="Transparent" Cursor="Hand">
-                        <profiles:ProfileSplashControl ZIndex="1" Radius="12" SplashScale="1.29" DataContext="{Binding CurrentProfile}"/>
+                        <profiles:ProfileSplashControl ZIndex="1" Radius="12" SplashScale="1.35" DataContext="{Binding CurrentProfile}"/>
 
                         <!-- Display Name -->
                         <Grid IsHitTestVisible="False">
                             <Grid x:Name="ProfileHoverGlow" Opacity="0" ZIndex="-1" IsVisible="True">
-                                <Border Margin="-35 0 -35 0" Opacity="0.3" Background="{Binding TitleBarSecondGradientBrush}" HorizontalAlignment="Stretch" Height="35">
+                                <Border Margin="-35 0 -35 0" Opacity="0.45" Background="{Binding TitleBarSecondGradientBrush}" HorizontalAlignment="Stretch" Height="35">
                                     <Border.Effect>
                                         <BlurEffect Radius="150"/>
                                     </Border.Effect>
                                 </Border>
                             </Grid>
 
-                            <TextBlock Name="ProfileName" MaxWidth="250" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Text="{Binding ProfileDisplayName}" FontSize="17" FontWeight="DemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+                            <TextBlock Name="ProfileName" MaxWidth="250" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Text="{Binding ProfileDisplayName}" FontSize="18" FontWeight="DemiBold" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
                         </Grid>
                     </StackPanel>
                 </Button>

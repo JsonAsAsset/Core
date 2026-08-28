@@ -26,6 +26,7 @@ public partial class CloudApiController
     private sealed record CurveExpression(
         string Target,
         string Expression,
+        string Form,
         string[] Constants,
         Dictionary<string, float> Weights);
 
@@ -62,11 +63,14 @@ public partial class CloudApiController
                 .Distinct()
                 .ToArray()!;
 
+            var weights = WeighConstants(expression, constants);
+
             expressions.Add(new CurveExpression(
                 target.Text,
                 CurveExpressionText.Write(expression),
+                DescribeForm(expression, constants, weights),
                 constants,
-                WeighConstants(expression, constants)));
+                weights));
         }
 
         expressions.Sort((left, right) => string.CompareOrdinal(left.Target, right.Target));
@@ -142,6 +146,63 @@ public partial class CloudApiController
             mapping = path,
             entries
         });
+    }
+
+    /* Whether the weights above are the whole of what the expression does.
+     *
+     * A weight is only worth having if the expression is the sum those weights describe, and most
+     * of these are: a handful of the rig's controls, each worth so much, added up and held between
+     * nothing and one. Some are not, and a consumer that rebuilt one of those out of its weights
+     * would be building something the head never asked for.
+     *
+     * Settled by running the thing rather than by reading it. The expression is evaluated at a
+     * spread of constant values and compared against the sum, and against the sum clamped, and it
+     * is called whichever of those it matches everywhere. Matching nowhere is "other", which is a
+     * consumer's cue to leave it alone.
+     *
+     * The spread is fixed rather than random, so the same asset answers the same way every time. */
+    private static string DescribeForm(FExpressionObject expression, string[] constants, Dictionary<string, float> weights)
+    {
+        if (constants.Length == 0) return "other";
+
+        var linear = true;
+        var clamped = true;
+
+        /* Enough of the corners and the middle to catch a clamp, and to catch a product or a
+         * minimum pretending to be a sum while every constant is set to the same thing */
+        float[][] spreads =
+        [
+            constants.Select(_ => 1f).ToArray(),
+            constants.Select(_ => 0.5f).ToArray(),
+            constants.Select((_, index) => index % 2 == 0 ? 1f : 0f).ToArray(),
+            constants.Select((_, index) => index % 3 == 0 ? 0.8f : 0.25f).ToArray(),
+            constants.Select((_, index) => (index + 1) / (float)(constants.Length + 1)).ToArray()
+        ];
+
+        foreach (var spread in spreads)
+        {
+            var at = new Dictionary<string, float>(constants.Length);
+
+            for (var index = 0; index < constants.Length; index++)
+            {
+                at[constants[index]] = spread[index];
+            }
+
+            var actual = CurveExpressionText.Evaluate(expression, name => at.GetValueOrDefault(name, 0f));
+
+            var sum = constants.Sum(name => weights.GetValueOrDefault(name, 0f) * at[name]);
+
+            if (!float.IsFinite(actual)) return "other";
+
+            if (Math.Abs(actual - sum) > 0.0001f) linear = false;
+            if (Math.Abs(actual - Math.Clamp(sum, 0f, 1f)) > 0.0001f) clamped = false;
+
+            if (!linear && !clamped) return "other";
+        }
+
+        /* Linear first: an expression that never leaves nought to one satisfies both, and the
+         * plainer reading is the one that is true of it everywhere rather than only here */
+        return linear ? "linear" : "clamped";
     }
 
     private static Dictionary<string, float> WeighConstants(FExpressionObject expression, string[] constants)
