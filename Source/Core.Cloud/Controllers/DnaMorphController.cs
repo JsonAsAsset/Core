@@ -1,4 +1,4 @@
-using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
+﻿using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.Utils;
@@ -35,9 +35,12 @@ public partial class CloudApiController
     [HttpGet("export/dnamorphs")]
     /* Every LOD by default: a morph that only exists on the first one stops deforming the moment
      * the head is far enough away to draw another */
-    public ActionResult GetDnaMorphs(string? path, string? mapping, int lods = 0)
+    public ActionResult GetDnaMorphs(string? path, string? mapping, int lods = 0, bool backport = false)
     {
         if (!IsBaseProfileReady || MainProfile is null) return NotInitializedResponse;
+
+        /* Asked for without being named, the one the game ships is meant */
+        if (backport && string.IsNullOrWhiteSpace(mapping)) mapping = DefaultCurveMapping;
 
         if (string.IsNullOrWhiteSpace(path)) return BadRequest(new
         {

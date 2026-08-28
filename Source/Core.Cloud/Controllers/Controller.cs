@@ -115,6 +115,9 @@ public partial class CloudApiController : ControllerBase
             name = MainProfile?.Provider.ProjectName,
             major_version = MainProfile?.Version >= EGame.GAME_UE5_0 ? 5 : 4,
             minor_version,
+            /* Which mapping an older head's curves are written in terms of, said once here so
+             * whoever needs it does not have to be told and cannot be told a different one */
+            curve_mapping = DefaultCurveMapping,
             profile = MainProfile
         });
     }

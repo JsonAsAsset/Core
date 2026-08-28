@@ -1,4 +1,4 @@
-using CUE4Parse.UE4.Assets.Exports;
+﻿using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Rig;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression;
@@ -41,18 +41,29 @@ public partial class CloudApiController
     /* A corrective: what it is worth, and the controls whose product it is. Named here because a DNA
      * does not name them, and whatever drives the poses has to be able to say which one it means. */
     private sealed record DnaCorrective(string Name, int Index, float Weight, string[] Inputs, string Expression);
-
-
-
+    
     /* A joint's three translations, three rotations and three scales, which is how a DNA writes
      * them whatever the rig does with them later */
     private const int DnaJointAttributes = 9;
 
+    /* The mapping an older head's curves are written in terms of.
+     *
+     * Backporting needs the correspondence between a rig's own controls and the curves an older
+     * head animates through, and the game ships that as an asset. Which asset it is, is a fact
+     * about the game rather than a choice anybody makes, so it is known here rather than asked for:
+     * whoever wants a backport says so, and does not have to know where the game keeps it.
+     *
+     * Still overridable by naming one, for a game that keeps a different mapping. */
+    private const string DefaultCurveMapping = "/Game/Characters/Player/Common/Fortnite_Base_Head/Facials/CurveMappings/FN_LegacyTo3L_Main_Mapping";
+
     /* One pose per raw control, or one per curve of an older head when a mapping is named */
     [HttpGet("export/dnaposes")]
-    public ActionResult GetDnaPoses(string? path, string? mapping)
+    public ActionResult GetDnaPoses(string? path, string? mapping, bool backport = false)
     {
         if (!IsBaseProfileReady || MainProfile is null) return NotInitializedResponse;
+
+        /* Asked for without being named, the one the game ships is meant */
+        if (backport && string.IsNullOrWhiteSpace(mapping)) mapping = DefaultCurveMapping;
 
         if (string.IsNullOrWhiteSpace(path)) return BadRequest(new
         {

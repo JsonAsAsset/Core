@@ -1,4 +1,4 @@
-using CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression;
+﻿using CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression;
 
 using Core.Cloud.Objects;
 using CUE4Parse.UE4.Objects.UObject;
@@ -89,6 +89,61 @@ public partial class CloudApiController
      * A curve driven by something other than a weighted sum has no such thing as a coefficient,
      * and for one of those this reports what each constant does alone, which is all that can be
      * said without inventing the rest. */
+    /* The curve mapping as a table, said once so nobody else has to know where it is.
+     *
+     * Each entry is one of the newer rig's controls and how much of each of the older head's curves
+     * went into it. That is the mapping itself, weighed out rather than interpreted: read forward it
+     * says what an older animation becomes, and read backwards it says what a newer one was made
+     * of. Which of those is wanted is the caller's business.
+     *
+     * The mapping is the one the game ships unless another is named, because which one it is, is a
+     * fact about the game rather than a choice anybody makes. */
+    [HttpGet("export/curvemapping")]
+    public ActionResult GetCurveMapping(string? mapping)
+    {
+        if (!IsBaseProfileReady || MainProfile is null) return NotInitializedResponse;
+
+        if (string.IsNullOrWhiteSpace(mapping)) mapping = DefaultCurveMapping;
+
+        var path = mapping.SubstringBefore('.');
+        var profile = FindBaseProfileForPath(path, found: out var found);
+
+        if (!found) return NotFoundResponse;
+
+        if (LoadExportOfType<UCurveExpressionsDataAsset>(profile.Provider, path) is not { } asset ||
+            asset.ExpressionData?.ExpressionMap is not { } map)
+        {
+            return NotFoundResponse;
+        }
+
+        var entries = new List<object>(map.Count);
+
+        foreach (var (target, expression) in map)
+        {
+            var constants = expression.Expression
+                .Select(element => element.TryGet<FName>(out var name) ? name.Text : null)
+                .Where(name => name is not null)
+                .Distinct()
+                .ToArray()!;
+
+            var weighed = WeighConstants(expression, constants)
+                .Select(pair => new { name = pair.Key, weight = pair.Value })
+                .ToArray();
+
+            if (weighed.Length == 0) continue;
+
+            entries.Add(new { target = target.Text, constants = weighed });
+        }
+
+        if (entries.Count == 0) return NotFoundResponse;
+
+        return new JsonResult(new
+        {
+            mapping = path,
+            entries
+        });
+    }
+
     private static Dictionary<string, float> WeighConstants(FExpressionObject expression, string[] constants)
     {
         var weights = new Dictionary<string, float>(constants.Length);
