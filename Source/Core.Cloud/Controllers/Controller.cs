@@ -1,4 +1,4 @@
-using CUE4Parse.GameTypes.FN.Assets.Exports.DataAssets;
+﻿using CUE4Parse.GameTypes.FN.Assets.Exports.DataAssets;
 using CUE4Parse_Conversion;
 using CUE4Parse_Conversion.Exporters;
 using CUE4Parse_Conversion.Options;
@@ -446,6 +446,10 @@ public partial class CloudApiController : ControllerBase
     /* Handle raw exports */
     /* Public on a controller means MVC treats it as an action and tries to bind its arguments, and
      * more than one of those binds from the body, which is refused when the routes are built */
+    /* Types a cook empties out, so the companion's copy of the same object is the one to serve.
+     * Everything else keeps what the cook wrote. */
+    private static readonly string[] EditorCopyReplacesCooked = ["NiagaraValidationRuleSet", "NiagaraScript"];
+
     [NonAction]
     public ActionResult HandleRawExport(string path, BaseProvider provider, IPackage? package = null)
     {
@@ -468,7 +472,21 @@ public partial class CloudApiController : ControllerBase
             {
                 foreach (var export in exports)
                 {
+                    /* The companion usually holds its extra data beside the export, named for it.
+                     *
+                     * A few types keep their copy under the export's own name instead, because the
+                     * cook emptied out what only the editor knew: a validation rule set comes out of
+                     * a cook with its list of rules the right length and every entry null.
+                     *
+                     * Asked for by type rather than tried on everything, because for most exports
+                     * the cooked value is the one to serve. */
                     var editorData = editorAsset.GetExportOrNull($"{export.Name}EditorOnlyData");
+
+                    if (editorData is null && EditorCopyReplacesCooked.Contains(export.ExportType))
+                    {
+                        editorData = editorAsset.GetExportOrNull(export.Name);
+                    }
+
                     if (editorData is null)
                     {
                         continue;
@@ -484,13 +502,29 @@ public partial class CloudApiController : ControllerBase
                         continue;
                     }
 
+                    /* Merged over rather than alongside. Both copies naming the same property is
+                     * one property said twice, and what the cook emptied is the copy to drop. */
+                    foreach (var property in editorData.Properties)
+                    {
+                        export.Properties.RemoveAll(existing => existing.Name.Text == property.Name.Text);
+                    }
+
                     export.Properties.AddRange(editorData.Properties);
-                    mergedExports.Add(export);
+
+                    /* The editor copy, since that is what the sweep below decides about. Naming the
+                     * cooked one leaves what was just folded in to be served again on its own. */
+                    mergedExports.Add(editorData);
                 }
+
+                /* What the cooked package already has, so the same object is not served twice. Where
+                 * there is no companion beside an asset, a provider can hand back the asset itself
+                 * rather than nothing, and every export in it then arrives a second time. */
+                var cookedNames = exports.Select(cooked => cooked.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 finalExports.AddRange(editorAsset.GetExports()
                     .Where(editorExport => !mergedExports.Contains(editorExport))
-                    .Where(editorExport => !skippedEditorExports.Contains(editorExport)));
+                    .Where(editorExport => !skippedEditorExports.Contains(editorExport))
+                    .Where(editorExport => !cookedNames.Contains(editorExport.Name)));
             }
 
             mergedExports.Clear();

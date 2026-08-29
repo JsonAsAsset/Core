@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -39,6 +39,7 @@ using Core.Plugins.OnDemand;
 using Core.Resources.Migration;
 using Core.Windows;
 using CUE4Parse.MappingsProvider.Usmap;
+using Core.Cloud.Objects;
 
 namespace Core.Models.Profiles;
 
@@ -353,6 +354,11 @@ public class Profile : BaseProfileDisplay
         if (MappingFile is not null && File.Exists(MappingFile))
         {
             Provider.MappingsContainer = new FileUsmapTypeMappingsProvider(MappingFile);
+
+            /* A dump taken from the game is short of what only the editor reflects, and a package
+             * the editor saved counts through the whole class whether the dump has all of it or
+             * not. The mappings file is left alone; the copy in memory is completed. */
+            EngineSchema.Apply(Provider.MappingsContainer.MappingsForGame, MappingFile);
         
             Log.Information($"Loaded Mappings: {MappingFile}");
         }

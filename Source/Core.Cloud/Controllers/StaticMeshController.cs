@@ -3,6 +3,8 @@ using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Engine;
 using CUE4Parse.Utils;
 
+using Core.Resources.Framework.Base;
+
 using CUE4Parse_Conversion.Dto;
 using CUE4Parse_Conversion.Options;
 
@@ -31,8 +33,26 @@ public partial class CloudApiController
     /* Slot name and the material it points at, so the importer can rebuild the slots in order */
     private sealed record StaticSlot(string SlotName, string ImportedSlotName, string? Material);
 
+    /* The mesh a caller named, or the first one where they named none */
+    private static UStaticMesh? FindStaticMesh(BaseProvider provider, string path, string? exportName)
+    {
+        if (!string.IsNullOrWhiteSpace(exportName) && provider.TryLoadPackage(path, out var package))
+        {
+            foreach (var lazyExport in package.ExportsLazy)
+            {
+                if (lazyExport.Value is UStaticMesh named &&
+                    string.Equals(named.Name, exportName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return named;
+                }
+            }
+        }
+
+        return LoadExportOfType<UStaticMesh>(provider, path);
+    }
+
     [HttpGet("export/staticmesh")]
-    public ActionResult GetStaticMesh(string? path)
+    public ActionResult GetStaticMesh(string? path, string? export_name)
     {
         if (!IsBaseProfileReady || MainProfile is null) return NotInitializedResponse;
 
@@ -48,7 +68,14 @@ public partial class CloudApiController
         var profile = FindBaseProfileForPath(path, found: out var found);
         if (!found) return NotFoundResponse;
 
-        if (LoadExportOfType<UStaticMesh>(profile.Provider, path) is not { RenderData: { } renderData } staticMesh)
+        /* Which mesh of the package is wanted.
+         *
+         * A package holding one mesh needs nothing said: it is the only one there. An HLOD proxy
+         * keeps a mesh per thing it stands in for, four of them under the one name, and answering
+         * with whichever comes first hands the same geometry back four times. */
+        var staticMesh = FindStaticMesh(profile.Provider, path, export_name);
+
+        if (staticMesh is not { RenderData: { } renderData })
         {
             return NotFoundResponse;
         }
