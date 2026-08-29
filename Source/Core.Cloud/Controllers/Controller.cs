@@ -1,4 +1,4 @@
-﻿using CUE4Parse.GameTypes.FN.Assets.Exports.DataAssets;
+using CUE4Parse.GameTypes.FN.Assets.Exports.DataAssets;
 using CUE4Parse_Conversion;
 using CUE4Parse_Conversion.Exporters;
 using CUE4Parse_Conversion.Options;
@@ -15,6 +15,7 @@ using CUE4Parse.UE4.Versions;
 using CUE4Parse.UE4.VirtualFileSystem;
 using CUE4Parse.Utils;
 
+using CUE4Parse.MappingsProvider;
 using Microsoft.AspNetCore.Mvc;
 
 using Newtonsoft.Json;
@@ -394,11 +395,20 @@ public partial class CloudApiController : ControllerBase
         var textureData = texture.Decode();
         if (textureData is null)
         {
+            /* Named rather than written out.
+             *
+             * A texture handed to the serializer takes its owner with it, and its owner is the
+             * package, and that is the provider the whole game is mounted in. What comes back is
+             * then not a message about one texture but a walk of everything reachable from it, and
+             * it does not end: sixteen gigabytes of it were enough to kill the caller outright.
+             *
+             * Which texture it was and that it could not be decoded is all there is to say. */
             return StatusCode(500, new
             {
                 errored = true,
-                exceptionstring = "Invalid texture data, exported as json",
-                exports = new { texture }
+                exceptionstring = "Invalid texture data",
+                texture = texture.Name,
+                path = texture.Owner?.Name
             });
         }
 
@@ -468,6 +478,18 @@ public partial class CloudApiController : ControllerBase
             /* Editor-only companions that are deliberately left out rather than merged */
             var skippedEditorExports = new List<UObject>();
 
+            /* The segment beside a cooked package was written by the editor and counts through
+             * the whole class, so it is read against the completed mappings and the cooked package
+             * is not. The cooked exports above are already read by this point. */
+            var wasUsing = provider.MappingsContainer;
+
+            var editorSchema = EditorSchemaFor(provider);
+
+            if (editorSchema is not null) provider.MappingsContainer = editorSchema;
+
+            try
+            {
+
             if (provider.TryLoadPackage(objectPath, out var editorAsset))
             {
                 foreach (var export in exports)
@@ -525,6 +547,12 @@ public partial class CloudApiController : ControllerBase
                     .Where(editorExport => !mergedExports.Contains(editorExport))
                     .Where(editorExport => !skippedEditorExports.Contains(editorExport))
                     .Where(editorExport => !cookedNames.Contains(editorExport.Name)));
+            }
+
+            }
+            finally
+            {
+                provider.MappingsContainer = wasUsing;
             }
 
             mergedExports.Clear();
@@ -598,6 +626,25 @@ public partial class CloudApiController : ControllerBase
 
     /* If the path exists on the main profile, it'll check if other profiles specifically override the main profile, if so it'll pick that, else it'll give the one found initially
      * If the path doesn't exist on a main profile, it'll cycle through each profile to find one that has the asset existing */
+    /* The completed mappings belonging to whichever profile mounted this provider */
+    private static ITypeMappingsProvider? EditorSchemaFor(BaseProvider provider)
+    {
+        if (MainProfile is { } main && ReferenceEquals(main.Provider, provider))
+        {
+            return main.EditorMappings;
+        }
+
+        foreach (var profile in SecondaryBaseProfiles)
+        {
+            if (ReferenceEquals(profile.Provider, provider))
+            {
+                return profile.EditorMappings;
+            }
+        }
+
+        return null;
+    }
+
     private static BaseProfile FindBaseProfileForPath(string rawPath, out bool found)
     {
         var path = rawPath.SubstringBefore('.');

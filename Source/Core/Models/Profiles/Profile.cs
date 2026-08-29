@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -353,12 +353,24 @@ public class Profile : BaseProfileDisplay
 
         if (MappingFile is not null && File.Exists(MappingFile))
         {
+            /* Two readings of the same mappings, because there are two kinds of package.
+             *
+             * A cooked package was written by a build with no editor data, and counts through the
+             * short list the mappings already hold. The optional segment beside it was written by
+             * the editor and counts through the whole class. The same numbers mean different
+             * properties in each, so one schema cannot read both.
+             *
+             * The mappings file is read twice and only the second copy is completed. Which of the
+             * two is in front of the provider is decided per package by whoever is reading. */
             Provider.MappingsContainer = new FileUsmapTypeMappingsProvider(MappingFile);
 
-            /* A dump taken from the game is short of what only the editor reflects, and a package
-             * the editor saved counts through the whole class whether the dump has all of it or
-             * not. The mappings file is left alone; the copy in memory is completed. */
-            EngineSchema.Apply(Provider.MappingsContainer.MappingsForGame, MappingFile);
+            CookedMappings = Provider.MappingsContainer;
+
+            var editorMappings = new FileUsmapTypeMappingsProvider(MappingFile);
+
+            EngineSchema.Apply(editorMappings.MappingsForGame, MappingFile);
+
+            EditorMappings = editorMappings;
         
             Log.Information($"Loaded Mappings: {MappingFile}");
         }

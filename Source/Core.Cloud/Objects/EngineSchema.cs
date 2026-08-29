@@ -1,4 +1,4 @@
-using CUE4Parse.MappingsProvider;
+﻿using CUE4Parse.MappingsProvider;
 
 using Newtonsoft.Json.Linq;
 
@@ -54,6 +54,8 @@ public static class EngineSchema
 
         var refused = new List<string>();
 
+        var reordered = new List<string>();
+
         foreach (var (name, token) in written)
         {
             if (token is not JObject entry) continue;
@@ -64,10 +66,24 @@ public static class EngineSchema
 
             if (listed is null) continue;
 
-            /* Mappings that already count as far as the engine does have nothing missing */
+            /* Counting as far as the engine does is not the same as agreeing with it.
+             *
+             * A dump taken against one engine and used against another can hold the same number of
+             * properties in a different order, and every one of them then reads off the wrong
+             * place with nothing missing to give it away. Where the two disagree the engine is the
+             * one that was there when the package was written, so it is taken whole. */
             if (schema.PropertyCount >= (int?) entry["Slots"])
             {
-                already++;
+                if (Agrees(schema, listed))
+                {
+                    already++;
+
+                    continue;
+                }
+
+                Rebuild(schema, listed);
+
+                reordered.Add(name);
 
                 continue;
             }
@@ -84,8 +100,13 @@ public static class EngineSchema
             completed++;
         }
 
-        Log.Information("Completed {0} type(s) from the engine schema, {1} already whole, {2} left alone",
-            completed, already, refused.Count);
+        Log.Information("Completed {0} type(s) from the engine schema, {1} put back in order, {2} already whole, {3} left alone",
+            completed, reordered.Count, already, refused.Count);
+
+        if (reordered.Count > 0)
+        {
+            Log.Warning("Put back in order: {0}", string.Join(", ", reordered));
+        }
 
         if (refused.Count > 0)
         {
@@ -118,6 +139,19 @@ public static class EngineSchema
      * without what a build with no editor data leaves out. Read in order, every name the mappings
      * carry has to turn up in the engine's list, in that order. Where it does not, the two are not
      * describing the same class and nothing is put over anything. */
+    /* Whether the mappings name the same properties in the same places the engine does */
+    private static bool Agrees(Struct schema, JArray listed)
+    {
+        for (var index = 0; index < listed.Count; index++)
+        {
+            if (!schema.Properties.TryGetValue(index, out var property)) continue;
+
+            if ((string?) listed[index]["Name"] != property.Name) return false;
+        }
+
+        return true;
+    }
+
     private static bool Completes(Struct schema, JArray listed)
     {
         var at = 0;

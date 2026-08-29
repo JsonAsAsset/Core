@@ -11,6 +11,8 @@ using CUE4Parse.UE4.Versions;
 using Core.Resources.Framework.CUEParse;
 using Core.Resources.Validators;
 
+using CUE4Parse.MappingsProvider;
+
 namespace Core.Resources.Framework.Base;
 
 public enum EAudioFormatType
@@ -26,6 +28,16 @@ public enum EAudioFormatType
 /* This class is used by both Core.Cloud and Core */
 public partial class BaseProfile : ObservableValidator
 {
+    /* The mappings as the game wrote them, and the same completed from the engine.
+     *
+     * A cooked package counts its properties through the short list a build without editor data
+     * reflects, which is what the mappings hold. The optional segment written beside it by the
+     * editor counts through the whole class. The same numbers mean different properties in each,
+     * so whoever reads a package picks the one that describes it. */
+    public ITypeMappingsProvider? CookedMappings { get; set; }
+
+    public ITypeMappingsProvider? EditorMappings { get; set; }
+
     /* The LATEST Schema Version */
     private static readonly int LatestSchemaVersion = 1;
     
