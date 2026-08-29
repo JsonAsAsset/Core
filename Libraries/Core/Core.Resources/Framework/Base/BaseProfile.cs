@@ -38,6 +38,9 @@ public partial class BaseProfile : ObservableValidator
 
     public ITypeMappingsProvider? EditorMappings { get; set; }
 
+    /* Which mappings file the provider ended up on */
+    public string? LoadedMappingsFile { get; set; }
+
     /* The LATEST Schema Version */
     private static readonly int LatestSchemaVersion = 1;
     

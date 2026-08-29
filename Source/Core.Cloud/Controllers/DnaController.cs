@@ -1,4 +1,4 @@
-using CUE4Parse.UE4.Assets;
+﻿using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Rig;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
@@ -37,6 +37,10 @@ public partial class CloudApiController
         /* Put down against the base every graph node is built on, which is where the search for a
          * reader ends up for all of them, so one registration covers every kind of node. */
         ObjectTypeRegistry.RegisterClass("EdGraphNode", typeof(UGraphNode));
+
+        /* Every export that has no reader of its own, so a class the mappings are short on is put right
+         * wherever it turns up rather than only where somebody noticed */
+        ObjectTypeRegistry.RegisterClass("Object", typeof(USchemaAligned));
     }
 
     /* The mesh's DNA, as the bytes RigLogic reads. Cooked packages keep the behavior layer and

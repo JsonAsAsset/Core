@@ -1,3 +1,5 @@
+﻿using CUE4Parse.Utils;
+
 using Microsoft.AspNetCore.Mvc;
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
@@ -14,6 +16,40 @@ namespace Core.Cloud.Controllers;
 
 public partial class CloudApiController
 {
+    [HttpGet("companion")]
+    public ActionResult GetCompanion(string? path)
+    {
+        if (!IsBaseProfileReady || path is null) return NotInitializedResponse;
+
+        path = path.SubstringBefore('.');
+
+        var profile = FindBaseProfileForPath(path, found: out var found);
+        if (!found) return NotFoundResponse;
+
+        var provider = profile.Provider;
+
+        var wasUsing = provider.MappingsContainer;
+        var editorSchema = EditorSchemaFor(provider);
+
+        if (editorSchema is not null) provider.MappingsContainer = editorSchema;
+
+        try
+        {
+            if (!provider.TryLoadPackage($"{path}.o.uasset", out var editorAsset)) return NotFoundResponse;
+
+            return new JsonResult(editorAsset.GetExports().Select(one => new
+            {
+                name = one.Name,
+                type = one.ExportType,
+                properties = one.Properties.Select(held => held.Name.Text).ToArray()
+            }).ToArray());
+        }
+        finally
+        {
+            provider.MappingsContainer = wasUsing;
+        }
+    }
+
     [HttpGet("schema")]
     public ActionResult GetSchema(string? type)
     {
@@ -60,6 +96,7 @@ public partial class CloudApiController
 
         return new JsonResult(new
         {
+            mappings = MainProfile.LoadedMappingsFile,
             name = schema.Name,
             super = schema.SuperType,
             count = schema.PropertyCount,

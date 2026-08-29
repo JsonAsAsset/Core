@@ -1,10 +1,11 @@
-using CUE4Parse.GameTypes.FN.Assets.Exports.DataAssets;
+﻿using CUE4Parse.GameTypes.FN.Assets.Exports.DataAssets;
 using CUE4Parse_Conversion;
 using CUE4Parse_Conversion.Exporters;
 using CUE4Parse_Conversion.Options;
 using CUE4Parse_Conversion.Sounds;
 using CUE4Parse_Conversion.Textures;
 using CUE4Parse.UE4.Assets;
+using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Sound;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;
@@ -458,7 +459,7 @@ public partial class CloudApiController : ControllerBase
      * more than one of those binds from the body, which is refused when the routes are built */
     /* Types a cook empties out, so the companion's copy of the same object is the one to serve.
      * Everything else keeps what the cook wrote. */
-    private static readonly string[] EditorCopyReplacesCooked = ["NiagaraValidationRuleSet", "NiagaraScript"];
+    private static readonly string[] EditorCopyReplacesCooked = ["NiagaraValidationRuleSet", "NiagaraScript", "NiagaraEmitter"];
 
     [NonAction]
     public ActionResult HandleRawExport(string path, BaseProvider provider, IPackage? package = null)
@@ -504,10 +505,20 @@ public partial class CloudApiController : ControllerBase
                      * the cooked value is the one to serve. */
                     var editorData = editorAsset.GetExportOrNull($"{export.Name}EditorOnlyData");
 
-                    if (editorData is null && EditorCopyReplacesCooked.Contains(export.ExportType))
-                    {
-                        editorData = editorAsset.GetExportOrNull(export.Name);
-                    }
+                    /* Whether what the editor wrote stands in for the cooked copy or only fills it out.
+                     *
+                     * A cook does two different things to an export. It empties some of them: a
+                     * validation rule set comes out with its list of rules the right length and every
+                     * entry null, and only the editor's copy has the rules. It leaves others alone but
+                     * drops the parts of them that a build with no editor data has no use for, and a
+                     * renderer that was switched off comes out with nothing saying so.
+                     *
+                     * The first is a copy to serve instead. The second is a copy to fill the gaps from,
+                     * and it must not do more than that: the cooked export's references are the ones
+                     * callers resolve against, and the editor's are its own. */
+                    var replaces = editorData is not null || EditorCopyReplacesCooked.Contains(export.ExportType);
+
+                    editorData ??= editorAsset.GetExportOrNull(export.Name);
 
                     if (editorData is null)
                     {
@@ -524,14 +535,24 @@ public partial class CloudApiController : ControllerBase
                         continue;
                     }
 
-                    /* Merged over rather than alongside. Both copies naming the same property is
-                     * one property said twice, and what the cook emptied is the copy to drop. */
-                    foreach (var property in editorData.Properties)
+                    if (replaces)
                     {
-                        export.Properties.RemoveAll(existing => existing.Name.Text == property.Name.Text);
-                    }
+                        /* Merged over rather than alongside. Both copies naming the same property is
+                         * one property said twice, and what the cook emptied is the copy to drop. */
+                        foreach (var property in editorData.Properties)
+                        {
+                            export.Properties.RemoveAll(existing => existing.Name.Text == property.Name.Text);
+                        }
 
-                    export.Properties.AddRange(editorData.Properties);
+                        export.Properties.AddRange(editorData.Properties);
+                    }
+                    else
+                    {
+                        /* Only what the cook left out. Anything the cooked export already says is what
+                         * it says, so nothing here can quietly answer for it. */
+                        export.Properties.AddRange(editorData.Properties.Where(property =>
+                            export.Properties.All(existing => existing.Name.Text != property.Name.Text)));
+                    }
 
                     /* The editor copy, since that is what the sweep below decides about. Naming the
                      * cooked one leaves what was just folded in to be served again on its own. */

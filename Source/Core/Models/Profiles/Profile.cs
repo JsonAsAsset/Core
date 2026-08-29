@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -22,6 +22,8 @@ using CUE4Parse.UE4.VirtualFileSystem;
 using FluentAvalonia.UI.Controls;
 
 using Microsoft.IdentityModel.Tokens;
+
+using System.Text.RegularExpressions;
 
 using Serilog;
 
@@ -372,10 +374,87 @@ public class Profile : BaseProfileDisplay
 
             EditorMappings = editorMappings;
         
+            LoadedMappingsFile = MappingFile;
+
             Log.Information($"Loaded Mappings: {MappingFile}");
+
+            WarnIfMappingsAreBehindTheBuild(MappingFile);
         }
     }
     
+    /* Only the two things worth comparing out of what a build writes about itself */
+    private class FBuildVersion
+    {
+        public string? BranchName { get; set; }
+
+        public long Changelist { get; set; }
+    }
+
+    /* What the archive says it was built from, read from the build the paks sit in */
+    private FBuildVersion? BuildBehindTheArchive()
+    {
+        var walking = new DirectoryInfo(ArchiveDirectory);
+
+        while (walking is not null)
+        {
+            var named = Path.Combine(walking.FullName, "Engine", "Build", "Build.version");
+
+            if (File.Exists(named))
+            {
+                try
+                {
+                    return Newtonsoft.Json.JsonConvert.DeserializeObject<FBuildVersion>(File.ReadAllText(named));
+                }
+                catch (Exception e)
+                {
+                    Log.Warning("Could not read {0}: {1}", named, e.Message);
+
+                    return null;
+                }
+            }
+
+            walking = walking.Parent;
+        }
+
+        return null;
+    }
+
+    /* Said out loud, because nothing else says it.
+     *
+     * An unversioned property is a number counted through a class's properties, so the mappings
+     * have to describe the same build the packages were cooked from. A build later than they were
+     * taken from is not a different file format, it is the same numbers meaning different
+     * properties in any class that has changed since: values land on the property before the one
+     * they meant, and the tail of the class falls off the end. Nothing about that looks like an
+     * error while it is happening. It reads as an asset that was simply saved that way.
+     *
+     * The release alone is not enough to compare. A hotfix keeps the release and moves the
+     * changelist, and a class can gain a property across one. */
+    private void WarnIfMappingsAreBehindTheBuild(string mappingsFile)
+    {
+        var built = BuildBehindTheArchive();
+
+        if (built is null || built.Changelist <= 0) return;
+
+        var taken = ChangelistOf(new FileInfo(mappingsFile));
+
+        if (taken <= 0 || taken >= built.Changelist) return;
+
+        Log.Warning(
+            "The mappings are older than the build they are being read against: {0} was taken at CL {1}, and {2} is CL {3}. "
+            + "Any class that has changed between the two reads its properties one place out from wherever the change was, "
+            + "and the last of them are lost. Nothing else will say so.",
+            Path.GetFileName(mappingsFile), taken, built.BranchName ?? "the archive", built.Changelist);
+    }
+
+    /* The changelist a mappings file is named for, which is the build it was taken from */
+    private static long ChangelistOf(FileSystemInfo file)
+    {
+        var found = Regex.Match(file.Name, @"CL-(\d+)");
+
+        return found.Success && long.TryParse(found.Groups[1].Value, out var changelist) ? changelist : -1;
+    }
+
     private static string? GetLocallyRecentCreatedMappings()
     {
         if (!UEDBMappingsFolder.Exists)
@@ -384,7 +463,29 @@ public class Profile : BaseProfileDisplay
         }
         
         var usmapFiles = UEDBMappingsFolder.GetFiles("*.usmap");
-        return usmapFiles.Length <= 0 ? null : usmapFiles.MaxBy(x => x.CreationTime)?.FullName;
+
+        if (usmapFiles.Length <= 0)
+        {
+            return null;
+        }
+
+        /* Newest by the build it came from, not by when the file landed here.
+         *
+         * A folder of these is usually fetched in one go, so every file carries the same creation
+         * time and picking the greatest of those picks whichever the disk happened to hand back
+         * first. That is a mappings file from some older build read against today's packages, and
+         * a class that has gained a property since counts one short from that property onwards:
+         * every number after it lands on the entry before the one it meant, quietly, for every
+         * asset of every type that uses the class.
+         *
+         * The name carries the changelist it was taken at, and a changelist only goes up. Where a
+         * name does not say, the file's own time is all there is to go on. */
+        return usmapFiles
+            .OrderByDescending(ChangelistOf)
+            .ThenByDescending(file => file.LastWriteTimeUtc)
+            .ThenByDescending(file => file.CreationTimeUtc)
+            .First()
+            .FullName;
     }
     
     private async Task LoadAssetRegistries(CancellationToken cancellationToken = default)
