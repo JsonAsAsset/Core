@@ -1,6 +1,7 @@
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Objects.Unversioned;
 using CUE4Parse.UE4.Assets.Readers;
+using CUE4Parse.UE4.Objects.UObject;
 
 using Serilog;
 
@@ -51,7 +52,15 @@ public class USchemaAligned : UObject
             if (!Examined.Add(type)) return;
         }
 
-        if (Ar.Owner?.Mappings is not { } mappings || !mappings.Types.TryGetValue(type, out var schema)) return;
+        /* Only where the package counts through the class at all.
+         *
+         * A package that names its properties as it writes them has no numbering to be short for,
+         * and the bytes at the front of it are not a header. Read as one they answer with whatever
+         * they happen to say, which is a class asked to grow by hundreds of properties it has not
+         * got. */
+        if (Ar.Owner is null || !Ar.Owner.HasFlags(EPackageFlags.PKG_UnversionedProperties)) return;
+
+        if (Ar.Owner.Mappings is not { } mappings || !mappings.Types.TryGetValue(type, out var schema)) return;
 
         var used = SlotsUsed(Ar);
 

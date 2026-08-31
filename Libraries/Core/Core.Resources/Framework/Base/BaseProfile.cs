@@ -34,9 +34,11 @@ public partial class BaseProfile : ObservableValidator
      * reflects, which is what the mappings hold. The optional segment written beside it by the
      * editor counts through the whole class. The same numbers mean different properties in each,
      * so whoever reads a package picks the one that describes it. */
-    public ITypeMappingsProvider? CookedMappings { get; set; }
+    /* Loaded state, not settings. Serialized they also make the profile unreadable on the way
+     * back in, since an interface cannot be deserialized, which throws away the whole file */
+    [JsonIgnore] public ITypeMappingsProvider? CookedMappings { get; set; }
 
-    public ITypeMappingsProvider? EditorMappings { get; set; }
+    [JsonIgnore] public ITypeMappingsProvider? EditorMappings { get; set; }
 
     /* Which mappings file the provider ended up on */
     public string? LoadedMappingsFile { get; set; }
