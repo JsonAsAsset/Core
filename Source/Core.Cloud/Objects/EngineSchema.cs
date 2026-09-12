@@ -1,4 +1,5 @@
 ﻿using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Versions;
 
 using Newtonsoft.Json.Linq;
 
@@ -28,13 +29,23 @@ public static class EngineSchema
 {
     public const string FileName = "EngineSchema.json";
 
-    public static void Apply(TypeMappings? mappings, string? mappingsFile)
+    public static void Apply(TypeMappings? mappings, string? mappingsFile, EGame version)
     {
         if (mappings is null || string.IsNullOrWhiteSpace(mappingsFile)) return;
 
-        var found = Locate(mappingsFile);
+        var major = ((int) version >> 24) & 0xFF;
+        var minor = ((int) version >> 16) & 0xFF;
 
-        if (found is null) return;
+        var found = Locate(mappingsFile, major, minor);
+
+        if (found is null)
+        {
+            Log.Warning("No engine schema for UE {0}.{1}, so the editor mappings are left as the game wrote them. " +
+                        "Editor only properties will read short. Dump one with -run=SchemaDump from a {0}.{1} editor and put it beside the mappings as {2}",
+                major, minor, NameFor(major, minor));
+
+            return;
+        }
 
         JObject written;
 
@@ -45,6 +56,21 @@ public static class EngineSchema
         catch (Exception e)
         {
             Log.Warning("Could not read the engine schema at {0}: {1}", found, e.Message);
+
+            return;
+        }
+
+        /* Refused outright rather than read partly.
+         *
+         * A dump from another engine is not a worse answer, it is a confident wrong one: a
+         * property added since sits in the middle of the list, and everything after it in the
+         * package then reads as the property before the one it meant. Nothing about the result
+         * looks wrong, which is what makes it worth refusing. */
+        if (!WrittenBy(written, major, minor, out var said))
+        {
+            Log.Error("The engine schema at {0} came from UE {1} and this profile is UE {2}.{3}, so it is not used. " +
+                      "Dump one from a {2}.{3} editor and put it beside the mappings as {4}",
+                found, said, major, minor, NameFor(major, minor));
 
             return;
         }
@@ -116,21 +142,49 @@ public static class EngineSchema
         }
     }
 
-    /* Beside the mappings, or in the folder above them */
-    private static string? Locate(string mappingsFile)
+    /* What a schema for one engine is called, since one file cannot serve them all */
+    public static string NameFor(int major, int minor) => $"EngineSchema-{major}.{minor}.json";
+
+    /* Beside the mappings, or in the folder above them.
+     *
+     * The one named for this engine is the only one taken. An unnamed EngineSchema.json is read
+     * only for what it says it came from, so an old one left lying around is refused by name
+     * rather than used by accident. */
+    private static string? Locate(string mappingsFile, int major, int minor)
     {
+        var wanted = NameFor(major, minor);
+
         var directory = Path.GetDirectoryName(mappingsFile);
 
         while (!string.IsNullOrEmpty(directory))
         {
-            var candidate = Path.Combine(directory, FileName);
-
-            if (File.Exists(candidate)) return candidate;
+            foreach (var candidate in new[] { Path.Combine(directory, wanted), Path.Combine(directory, FileName) })
+            {
+                if (File.Exists(candidate)) return candidate;
+            }
 
             directory = Path.GetDirectoryName(directory);
         }
 
         return null;
+    }
+
+    /* What the dump says it came from. One that says nothing came from before this was stamped and
+     * is refused for that reason, since there is no way to tell what it describes. */
+    private static bool WrittenBy(JObject written, int major, int minor, out string said)
+    {
+        said = "no engine at all";
+
+        if (written["$Engine"] is not JObject engine) return false;
+
+        var wroteMajor = (int?) engine["Major"];
+        var wroteMinor = (int?) engine["Minor"];
+
+        if (wroteMajor is null || wroteMinor is null) return false;
+
+        said = $"{wroteMajor}.{wroteMinor}";
+
+        return wroteMajor == major && wroteMinor == minor;
     }
 
     /* Whether what the mappings have is the engine's list with things taken out of it.

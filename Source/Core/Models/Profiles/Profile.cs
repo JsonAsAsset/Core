@@ -370,7 +370,7 @@ public class Profile : BaseProfileDisplay
 
             var editorMappings = new FileUsmapTypeMappingsProvider(MappingFile);
 
-            EngineSchema.Apply(editorMappings.MappingsForGame, MappingFile);
+            EngineSchema.Apply(editorMappings.MappingsForGame, MappingFile, Version);
 
             EditorMappings = editorMappings;
         

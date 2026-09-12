@@ -170,7 +170,7 @@
                                         </Viewbox>
                                     </Grid>
                                     
-                                    <TextBlock Foreground="White" FontWeight="DemiBold" FontSize="19" ZIndex="-1">star our repo ;)</TextBlock>
+                                    <TextBlock Foreground="White" FontWeight="DemiBold" FontSize="19" ZIndex="-1">star our repo</TextBlock>
                                 </StackPanel>
                             </Button>
                         </Grid>
